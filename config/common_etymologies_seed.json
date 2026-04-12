@@ -1,0 +1,14 @@
+{
+  "lexemes": [
+    {"lexeme_id": "lex:eng:hello", "language_id": "lang:eng", "lemma": "hello", "gloss": "greeting", "canonical_meaning_key": "greeting.hello"},
+    {"lexeme_id": "lex:spa:hola", "language_id": "lang:spa", "lemma": "hola", "gloss": "hello", "canonical_meaning_key": "greeting.hello"},
+    {"lexeme_id": "lex:fra:bonjour", "language_id": "lang:fra", "lemma": "bonjour", "gloss": "good day", "canonical_meaning_key": "greeting.hello"},
+    {"lexeme_id": "lex:eng:thanks", "language_id": "lang:eng", "lemma": "thanks", "gloss": "gratitude", "canonical_meaning_key": "gratitude.thanks"},
+    {"lexeme_id": "lex:spa:gracias", "language_id": "lang:spa", "lemma": "gracias", "gloss": "thanks", "canonical_meaning_key": "gratitude.thanks"},
+    {"lexeme_id": "lex:ita:ciao", "language_id": "lang:ita", "lemma": "ciao", "gloss": "hello/bye", "canonical_meaning_key": "greeting.hello"},
+    {"lexeme_id": "lex:vec:s-ciao", "language_id": "lang:vec", "lemma": "s-ciào", "gloss": "slave/servant formula historically tied to ciao", "canonical_meaning_key": "greeting.hello"}
+  ],
+  "edges": [
+    {"child_lexeme_id": "lex:ita:ciao", "parent_lexeme_id": "lex:vec:s-ciao", "relation": "descends_from", "confidence": 0.78, "source_ref": "seed:italian_ciao_venetian"}
+  ]
+}

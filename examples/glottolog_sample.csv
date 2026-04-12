@@ -1,0 +1,4 @@
+language_id,name,family,branch,parent_language_id,lineage_confidence,source_ref
+lang:ron,Romanian,Indo-European,Romance,fam:romance,0.92,glottolog:romanian-sample
+lang:ces,Czech,Indo-European,Slavic,fam:slavic,0.93,glottolog:czech-sample
+lang:nav,Navajo,Na-Dene,Athabaskan,fam:athabaskan,0.85,glottolog:navajo-sample

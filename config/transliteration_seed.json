@@ -1,0 +1,59 @@
+{
+  "profiles": [
+    {
+      "profile_id": "trprof_rus_cyrl_latn",
+      "language_id": "lang:rus",
+      "source_script": "Cyrl",
+      "target_script": "Latn",
+      "scheme_name": "basic_cyrillic_latin",
+      "coverage": "seeded",
+      "example_in": "привет",
+      "example_out": "privet",
+      "notes": "Broad seeded Cyrillic to Latin mapping."
+    },
+    {
+      "profile_id": "trprof_chr_cher_latn",
+      "language_id": "lang:chr",
+      "source_script": "Cher",
+      "target_script": "Latn",
+      "scheme_name": "basic_cherokee_latin",
+      "coverage": "seeded",
+      "example_in": "ᎣᏏᏲ",
+      "example_out": "osiyo",
+      "notes": "Broad seeded Cherokee syllabary to Latin mapping."
+    },
+    {
+      "profile_id": "trprof_hin_deva_latn",
+      "language_id": "lang:hin",
+      "source_script": "Deva",
+      "target_script": "Latn",
+      "scheme_name": "broad_devanagari_latin_hint",
+      "coverage": "experimental",
+      "example_in": "धन्यवाद",
+      "example_out": "dhanyavaad",
+      "notes": "Broad hint transliteration only; not a strict standard."
+    },
+    {
+      "profile_id": "trprof_arb_arab_latn",
+      "language_id": "lang:arb",
+      "source_script": "Arab",
+      "target_script": "Latn",
+      "scheme_name": "broad_arabic_latin_hint",
+      "coverage": "experimental",
+      "example_in": "مرحبا",
+      "example_out": "marhaba",
+      "notes": "Broad hint transliteration only; vowels may be underspecified."
+    },
+    {
+      "profile_id": "trprof_heb_hebr_latn",
+      "language_id": "lang:heb",
+      "source_script": "Hebr",
+      "target_script": "Latn",
+      "scheme_name": "broad_hebrew_latin_hint",
+      "coverage": "experimental",
+      "example_in": "שלום",
+      "example_out": "shalom",
+      "notes": "Broad hint transliteration only; vowels may be inferred."
+    }
+  ]
+}

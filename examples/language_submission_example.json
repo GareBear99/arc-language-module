@@ -1,0 +1,16 @@
+{
+  "language_id": "lang:moh",
+  "iso639_3": "moh",
+  "name": "Mohawk",
+  "family": "Iroquoian",
+  "branch": "Northern Iroquoian",
+  "parent_language_id": null,
+  "aliases": ["Kanien'kéha", "Kanienkeha"],
+  "common_words": ["shé:kon", "nia:wen"],
+  "scripts": ["Latn"],
+  "source_name": "user_submission",
+  "source_ref": "community_example",
+  "confidence": 0.82,
+  "notes": "Example onboarding payload for adding a new language safely.",
+  "status": "submitted"
+}

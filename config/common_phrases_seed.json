@@ -1,0 +1,90 @@
+{
+  "phrases": [
+    {
+      "canonical_key": "hello",
+      "variants": [
+        {"language_id": "lang:eng", "text": "hello"},
+        {"language_id": "lang:spa", "text": "hola"},
+        {"language_id": "lang:fra", "text": "bonjour"},
+        {"language_id": "lang:deu", "text": "hallo"},
+        {"language_id": "lang:por", "text": "olá"},
+        {"language_id": "lang:ita", "text": "ciao"},
+        {"language_id": "lang:rus", "text": "привет"},
+        {"language_id": "lang:ukr", "text": "привіт"},
+        {"language_id": "lang:arb", "text": "مرحبا"},
+        {"language_id": "lang:heb", "text": "שלום"},
+        {"language_id": "lang:hin", "text": "नमस्ते"},
+        {"language_id": "lang:ben", "text": "হ্যালো"},
+        {"language_id": "lang:urd", "text": "سلام"},
+        {"language_id": "lang:pan", "text": "ਸਤ ਸ੍ਰੀ ਅਕਾਲ"},
+        {"language_id": "lang:tam", "text": "வணக்கம்"},
+        {"language_id": "lang:tel", "text": "నమస్కారం"},
+        {"language_id": "lang:tur", "text": "merhaba"},
+        {"language_id": "lang:fas", "text": "سلام"},
+        {"language_id": "lang:cmn", "text": "你好"},
+        {"language_id": "lang:yue", "text": "你好"},
+        {"language_id": "lang:jpn", "text": "こんにちは"},
+        {"language_id": "lang:kor", "text": "안녕하세요"},
+        {"language_id": "lang:vie", "text": "xin chào"},
+        {"language_id": "lang:ind", "text": "halo"},
+        {"language_id": "lang:msa", "text": "halo"},
+        {"language_id": "lang:tha", "text": "สวัสดี"},
+        {"language_id": "lang:swa", "text": "habari"},
+        {"language_id": "lang:amh", "text": "ሰላም"},
+        {"language_id": "lang:chr", "text": "ᎣᏏᏲ"},
+        {"language_id": "lang:crk", "text": "tânisi"},
+        {"language_id": "lang:nav", "text": "yá'át'ééh"}
+      ]
+    },
+    {
+      "canonical_key": "thank_you",
+      "variants": [
+        {"language_id": "lang:eng", "text": "thank you"},
+        {"language_id": "lang:spa", "text": "gracias"},
+        {"language_id": "lang:fra", "text": "merci"},
+        {"language_id": "lang:deu", "text": "danke"},
+        {"language_id": "lang:por", "text": "obrigado"},
+        {"language_id": "lang:ita", "text": "grazie"},
+        {"language_id": "lang:rus", "text": "спасибо"},
+        {"language_id": "lang:ukr", "text": "дякую"},
+        {"language_id": "lang:arb", "text": "شكرا"},
+        {"language_id": "lang:heb", "text": "תודה"},
+        {"language_id": "lang:hin", "text": "धन्यवाद"},
+        {"language_id": "lang:ben", "text": "ধন্যবাদ"},
+        {"language_id": "lang:urd", "text": "شکریہ"},
+        {"language_id": "lang:pan", "text": "ਧੰਨਵਾਦ"},
+        {"language_id": "lang:tam", "text": "நன்றி"},
+        {"language_id": "lang:tel", "text": "ధన్యవాదాలు"},
+        {"language_id": "lang:tur", "text": "teşekkürler"},
+        {"language_id": "lang:fas", "text": "ممنون"},
+        {"language_id": "lang:cmn", "text": "谢谢"},
+        {"language_id": "lang:yue", "text": "多謝"},
+        {"language_id": "lang:jpn", "text": "ありがとう"},
+        {"language_id": "lang:kor", "text": "감사합니다"},
+        {"language_id": "lang:vie", "text": "cảm ơn"},
+        {"language_id": "lang:ind", "text": "terima kasih"},
+        {"language_id": "lang:msa", "text": "terima kasih"},
+        {"language_id": "lang:tha", "text": "ขอบคุณ"},
+        {"language_id": "lang:swa", "text": "asante"},
+        {"language_id": "lang:amh", "text": "አመሰግናለሁ"}
+      ]
+    },
+    {
+      "canonical_key": "what_is_this",
+      "variants": [
+        {"language_id": "lang:eng", "text": "what is this"},
+        {"language_id": "lang:spa", "text": "qué es esto"},
+        {"language_id": "lang:fra", "text": "qu'est-ce que c'est"},
+        {"language_id": "lang:deu", "text": "was ist das"},
+        {"language_id": "lang:por", "text": "o que é isto"},
+        {"language_id": "lang:ita", "text": "che cos'è questo"},
+        {"language_id": "lang:rus", "text": "что это"},
+        {"language_id": "lang:arb", "text": "ما هذا"},
+        {"language_id": "lang:hin", "text": "यह क्या है"},
+        {"language_id": "lang:cmn", "text": "这是什么"},
+        {"language_id": "lang:jpn", "text": "これは何ですか"},
+        {"language_id": "lang:kor", "text": "이것은 무엇입니까"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "languages": [
+    {
+      "language_id": "lang:ron",
+      "name": "Romanian",
+      "scripts": [
+        "Latn"
+      ],
+      "aliases": [
+        "Română"
+      ],
+      "source_ref": "cldr:ro"
+    },
+    {
+      "language_id": "lang:ces",
+      "name": "Czech",
+      "scripts": [
+        "Latn"
+      ],
+      "aliases": [
+        "Čeština"
+      ],
+      "source_ref": "cldr:cs"
+    },
+    {
+      "language_id": "lang:nav",
+      "name": "Navajo",
+      "scripts": [
+        "Latn"
+      ],
+      "aliases": [
+        "Diné Bizaad"
+      ],
+      "source_ref": "cldr:nv"
+    }
+  ]
+}

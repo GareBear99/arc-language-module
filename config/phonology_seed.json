@@ -1,0 +1,8 @@
+{
+  "profiles": [
+    {"language_id": "lang:eng", "notation_system": "broad_ipa", "broad_ipa": "əpɹɒksɪmət", "stress_policy": "lexical_stress", "syllable_template": "(C)(C)V(C)", "examples": {"hello": "həˈloʊ"}, "notes": "Broad English IPA hints only."},
+    {"language_id": "lang:spa", "notation_system": "broad_ipa", "broad_ipa": "aˈpɾoksimado", "stress_policy": "predictable_with_accents", "syllable_template": "(C)V(C)", "examples": {"hola": "ˈola"}, "notes": "Broad Spanish IPA hints only."},
+    {"language_id": "lang:rus", "notation_system": "broad_ipa", "broad_ipa": "prʲɪˈvʲet", "stress_policy": "lexical_stress", "syllable_template": "(C)(C)V(C)(C)", "examples": {"привет": "prʲɪˈvʲet"}, "notes": "Broad Russian IPA hints only."},
+    {"language_id": "lang:hin", "notation_system": "broad_ipa", "broad_ipa": "d̪ʱən̪jəʋaːd̪", "stress_policy": "light", "syllable_template": "(C)V(C)", "examples": {"धन्यवाद": "d̪ʱən̪jəʋaːd̪"}, "notes": "Broad Hindi IPA hints only."}
+  ]
+}

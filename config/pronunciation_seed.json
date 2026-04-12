@@ -1,0 +1,77 @@
+{
+  "profiles": [
+    {
+      "language_id": "lang:eng",
+      "profile_kind": "native_pronunciation",
+      "romanization_scheme": "native_latin",
+      "ipa_hint": "General American / broad hint only",
+      "examples": {
+        "hello": "hə-LOH",
+        "thanks": "THANGKS"
+      },
+      "notes": "Broad phonetic hint, not strict IPA."
+    },
+    {
+      "language_id": "lang:spa",
+      "profile_kind": "native_pronunciation",
+      "romanization_scheme": "native_latin",
+      "ipa_hint": "Broad Spanish / IPA-ish hint",
+      "examples": {
+        "hola": "OH-la",
+        "gracias": "GRAH-syahs"
+      },
+      "notes": "Seeded broad pronunciation guidance."
+    },
+    {
+      "language_id": "lang:rus",
+      "profile_kind": "native_pronunciation",
+      "romanization_scheme": "cyrl_to_latn_seed",
+      "ipa_hint": "Broad Russian / IPA-ish hint",
+      "examples": {
+        "привет": "pree-VYET",
+        "спасибо": "spa-SEE-ba"
+      },
+      "notes": "Uses seeded Cyrillic transliteration plus stress-style hints."
+    },
+    {
+      "language_id": "lang:hin",
+      "profile_kind": "native_pronunciation",
+      "romanization_scheme": "deva_to_latn_seed",
+      "ipa_hint": "Broad Hindi / IPA-ish hint",
+      "examples": {
+        "धन्यवाद": "dhun-yuh-VAAD"
+      },
+      "notes": "Seeded Devanagari pronunciation guidance."
+    },
+    {
+      "language_id": "lang:arb",
+      "profile_kind": "native_pronunciation",
+      "romanization_scheme": "arab_to_latn_seed",
+      "ipa_hint": "Broad Arabic / IPA-ish hint",
+      "examples": {
+        "شكرا": "SHUK-ran"
+      },
+      "notes": "Seeded Arabic pronunciation guidance."
+    },
+    {
+      "language_id": "lang:heb",
+      "profile_kind": "native_pronunciation",
+      "romanization_scheme": "hebr_to_latn_seed",
+      "ipa_hint": "Broad Hebrew / IPA-ish hint",
+      "examples": {
+        "תודה": "to-DAH"
+      },
+      "notes": "Seeded Hebrew pronunciation guidance."
+    },
+    {
+      "language_id": "lang:chr",
+      "profile_kind": "native_pronunciation",
+      "romanization_scheme": "cher_to_latn_seed",
+      "ipa_hint": "Broad Cherokee / syllabary romanization hint",
+      "examples": {
+        "ᎣᏏᏲ": "o-si-yo"
+      },
+      "notes": "Seeded Cherokee syllabary pronunciation guidance."
+    }
+  ]
+}
