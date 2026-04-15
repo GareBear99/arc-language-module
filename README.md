@@ -1,137 +1,179 @@
-# ARC Language Module v0.13.0
+# ARC Language Module v0.24 (production-track)
 
-A text-first multilingual language/script/lineage substrate for ARC-style systems.
+A governed, auditable multilingual language/script/lineage substrate.
+Separates graph truth from runtime capability, and package-owned data from external corpus dependencies.
 
-## What v0.6 adds
-- lineage normalized into real family/branch nodes
-- lineage node provenance
-- seeded lexeme + etymology layer
-- translate/explain now returns etymology when available
-- optional PersonaPlex speech boundary remains downstream only
+---
+
+## What this package actually is
+
+- A **SQLite-backed language graph** — 34 seeded languages across 14 families, with scripts, aliases, lineage edges, phonology profiles, transliteration profiles, pronunciation profiles, and dialect/register/orthography variants.
+- A **governed ingestion pipeline** — dry-run mode, conflict detection, dedup reporting, provenance tracking for Glottolog, ISO 639-3, and CLDR corpora.
+- A **runtime routing layer** — separates knowing a language from being able to translate or speak it. Every provider gap is surfaced explicitly, never silently.
+- An **operator tooling layer** — acquisition workspace, coverage reports, implementation matrix, evidence bundles, conflict review exports, policy controls.
+- An **honest gap-tracking system** — every missing corpus is declared in manifests; every unsupported runtime is marked; no fake support.
+
+---
+
+## What this package is not
+
+- A full translation engine — local seeded phrase translation only; Argos/NLLB are optional external dependencies
+- A full TTS/speech system — PersonaPlex and similar are boundary stubs
+- A complete phonemic inventory — all 34 phonology profiles are broad IPA hints with explicit scope notes
+- A character-level transliteration engine — profiles declare the scheme and maturity; character mapping tables are not bundled
+
+---
 
 ## Quick start
+
 ```bash
+pip install -e .
+
 python -m arc_lang.cli.main init-db
 python -m arc_lang.cli.main seed-common-languages
-python -m arc_lang.cli.main detect "hola gracias"
-python -m arc_lang.cli.main lineage lang:spa
-python -m arc_lang.cli.main etymology lang:ita ciao
-python -m arc_lang.cli.main translate-explain hola lang:eng
+python -m arc_lang.cli.main stats
+python -m arc_lang.cli.main coverage-report
+python -m arc_lang.cli.main system-status
+python -m arc_lang.cli.main build-implementation-matrix
 ```
 
+---
 
-## Language onboarding
+## Seed coverage (v0.24)
 
-You can now add new languages through a staged submission flow instead of raw database edits. This supports review, approval, and promotion into the canonical graph, plus separate custom lineage assertions for disputed or incomplete classifications.
+| Surface | Count | Notes |
+|---------|-------|-------|
+| Languages | 34 | Across 14 families |
+| Families / branches (lineage nodes) | 33 | |
+| Scripts | 15 | Latn, Cyrl, Arab, Deva, Beng, Guru, Taml, Telu, Thai, Hira/Kana, Kore, Hans/Hant, Hebr, Ethi, Cher, Grek |
+| Language aliases | 77 | Endonyms, exonyms, romanized forms |
+| Phonology profiles | 34 | All 34 seeded languages — broad IPA hints |
+| Transliteration profiles | 21 | All non-Latin-script languages |
+| Pronunciation profiles | 34 | All 34 seeded languages |
+| Language variants | 37 | Dialects, registers, orthographies, historical stages |
+| Phrase translations | 71 | Common phrases across all 34 languages |
+| Provider registry | 10 | local + optional stubs |
+| Language capabilities | 238 | Maturity-tracked per language per capability |
 
+All 34 seeded languages have zero missing-profile flags in coverage reports. Transliteration profiles are only required for non-Latin-script languages — Latin-script languages correctly report `missing_transliteration: false`.
 
-## v10 additions
+---
 
-- Source arbitration for lineage conflicts
-- Effective truth view that compares canonical lineage edges, custom assertions, and review decisions
-- Conflict surfacing instead of silent flattening
-- New CLI command: `arc-lang effective-lineage <language_id>`
-- New API route: `GET /lineage/{language_id}/effective`
+## Ingestion (dry-run safe)
 
+```bash
+# Preview — no writes, shows conflicts
+python -m arc_lang.cli.main import-glottolog-fixture path/to/glottolog.csv --dry-run
 
-## Runtime orchestration
+# Live — idempotent, provenance-tracked, dedup-reported
+python -m arc_lang.cli.main import-glottolog-fixture path/to/glottolog.csv
+python -m arc_lang.cli.main import-iso-fixture path/to/iso639-3.csv
+python -m arc_lang.cli.main import-cldr-fixture path/to/cldr.json
+```
 
-Version 0.10.0 adds provider-aware runtime routing for translation and speech. The module now separates graph truth from execution routing, so requests can be gated by per-language capability maturity before they are sent to a translation or speech provider.
+Live imports report: `records_seen`, `records_inserted`, `records_updated`, `conflict_count`. Conflicts against existing custom lineage assertions are surfaced in the return payload — never silently overwritten.
 
-New CLI examples:
+---
 
-- `arc-lang runtime-translate hola lang:eng --require-speech --speech-provider personaplex`
-- `arc-lang runtime-speak hello lang:eng --provider personaplex`
+## Phonology
 
-New API routes:
+All 34 languages have seeded broad IPA phonology profiles including: stress policy, syllable template, IPA examples. Low-resource languages (Navajo, Cherokee, Plains Cree) include explicit notes directing operators to authoritative community resources.
 
-- `POST /runtime/translate`
-- `POST /runtime/speak`
+```bash
+python -m arc_lang.cli.main phonology-hint "こんにちは" lang:jpn
+python -m arc_lang.cli.main list-phonology-profiles --language-id lang:arb
+python -m arc_lang.cli.main upsert-phonology-profile lang:ita narrow_ipa --broad-ipa "itaˈljano"
+```
 
+---
 
-## v12 additions
+## Transliteration
 
-- Provider registry with enable/disable and local-only flags
-- Provider health snapshots (healthy/degraded/offline)
-- Runtime job receipts for translation and speech execution
-- Health-aware runtime orchestration that blocks offline providers
+21 entries covering all non-Latin-script languages in the seed. Each profile declares its scheme name and coverage maturity (`seeded | experimental | reviewed | production`).
 
+```bash
+python -m arc_lang.cli.main list-transliteration-profiles --language-id lang:jpn
+python -m arc_lang.cli.main transliterate "привет" Cyrl Latn
+```
 
-## v13 additions
+---
 
-- Built-in translation backend adapter framework
-- Working local backends for seeded graph translation and same-language mirror routing
-- Boundary stubs for future Argos/NLLB style adapters
-- New API route: `GET /providers/translation-backends`
-- New CLI command: `arc-lang list-translation-backends`
-- Runtime translation now routes through adapters instead of hard-coded local-only fallbacks
+## Language variants
 
+37 dialect, register, orthography, and historical-stage variants seeded for 12 languages.
 
-## New in v14
+```bash
+python -m arc_lang.cli.main list-language-variants --language-id lang:eng
+python -m arc_lang.cli.main list-language-variants --variant-type historical_stage
+python -m arc_lang.cli.main upsert-language-variant lang:deu "Bavarian" dialect --region-hint DE-BY --mutual-intelligibility 0.7
+```
 
-- Added `argos_local` as an optional offline translation backend boundary with honest dependency/package checks.
-- Keeps translation runtime auditable through the existing registry, health, and receipt system.
+---
 
+## Arbitration
 
-## v15 runtime diagnostics
+Source-weight-aware lineage arbitration reads live DB weights — operator changes via `set-source-weight` take effect immediately:
 
-This version adds provider diagnostics, Argos local installed-package inspection, per-language-pair translation readiness, and a readiness matrix so the runtime can explain exactly what is executable locally versus only theoretically wired.
+```bash
+python -m arc_lang.cli.main set-source-weight glottolog 1.0
+python -m arc_lang.cli.main effective-lineage lang:spa
+python -m arc_lang.cli.main export-conflict-review conflicts.json
+```
 
+Scoring: `confidence × source_weight(DB) × status_weight × decision_weight × dispute_factor`. Canonical edges score with `status_weight=1.0`; disputed custom assertions score at `0.45`.
 
-## New in v0.16.0
-- translation install-plan generation for provider/language pairs
-- install-plan recording and listing in SQLite
-- actionable package/configuration next steps for argos_local and boundary providers
-- package lifecycle documentation in `docs/PACKAGE_LIFECYCLE.md`
+---
 
+## Coverage reporting
 
-## v17 additions
+```bash
+python -m arc_lang.cli.main coverage-report
+python -m arc_lang.cli.main coverage-report --language-id lang:jpn --language-id lang:kor --output-path cov.json
+```
 
-- provider action catalog for runtime/install workflows
-- dry-run/apply provider action execution
-- provider action receipts for auditable backend lifecycle steps
+Per-language output includes: alias count by type, script count, phonology/transliteration/pronunciation profile counts, lineage edge count, custom lineage count, capability maturity summary, and 4 honest gap flags. Summary includes aggregate gap counts.
 
+---
 
-## v18 Hardening Additions
+## Acquisition workspace
 
-- system status summary
-- operator policy controls
-- evidence bundle export
-- policy-aware runtime and provider action blocking
+```bash
+python -m arc_lang.cli.main plan-acquisition-job Glottolog --stage-name staging
+python -m arc_lang.cli.main record-staged-asset <job_id> /path/to/file.csv
+python -m arc_lang.cli.main validate-staged-asset /path/to/file.csv csv
+python -m arc_lang.cli.main export-ingestion-workspace workspace.json
+```
 
+---
 
-## New in v19
+## External dependencies (not bundled)
 
-- pronunciation hint profiles
-- morphology/syntax assist analysis
-- translate-explain now carries source analysis and target pronunciation hints
-- system status includes pronunciation profile coverage
+| Provider | Enables | How to activate |
+|----------|---------|-----------------|
+| `argostranslate` | Local neural MT | `pip install argostranslate` + model download |
+| NLLB | Large-scale neural MT | External inference server (bridge stub) |
+| PersonaPlex | Neural speech synthesis | NVIDIA API (boundary stub) |
+| Glottolog corpus | Real genealogy data | Download from glottolog.org |
+| ISO 639-3 corpus | Authoritative identifiers | Download from SIL |
+| CLDR corpus | Script/locale mappings | Download from unicode.org |
 
+---
 
-## v20 highlights
+## Architecture
 
-- Transliteration profiles and profile-aware transliteration routing
-- Better low-resource maturity defaults for Navajo, Cherokee, and Plains Cree
-- Richer operator status with readiness summary
-- Analysis output now includes transliteration profile context
+See `docs/ARCHITECTURE.md` for: separation of concerns table, arbitration formula, provider model, complete data-flow diagram, and 39-table schema inventory.
 
+See `docs/INGESTION_PLAN.md` for: dry-run semantics, dedup reporting, conflict detection, import order, source authority weights.
 
-## v22 growth surfaces
+See `docs/IMPLEMENTATION_MANIFESTS_AND_PHONOLOGY.md` for: honest surface-by-surface implementation status, phonology scope statement, transliteration scheme table.
 
-- semantic concept graphing
-- dialect/register/orthography variant metadata
-- conflict review bundle export
-- per-language coverage reporting
+---
 
+## Tests
 
-## New in v23
+```bash
+python -m pytest tests/ -q
+# 325 tests, 0 failures
+```
 
-- Phonology profile scaffolding with broad IPA hints
-- Backend manifests describing runtime and bridge expectations
-- Corpus manifests separating installed seed data from external required datasets
-- Implementation matrix reports that split package-owned features from external-data/runtime dependencies
-
-
-## v24 acquisition and validation layer
-
-This build adds an acquisition workspace for external corpora and real-source ingestion. It can plan corpus staging jobs, record staged assets, validate local source files before import, and export an operator-facing ingestion workspace bundle. This closes the package-owned gap between **manifest says external data is needed** and **operator has a governed path to acquire, stage, validate, and track that data**.
+28 test files covering: smoke, importers (dry_run + conflict detection), governance, arbitration (DB source weights), search (alias table), coverage report (gap flags), phonology, transliteration, pronunciation, variants, acquisition workspace, implementation matrix, batch I/O, provider runtime, evidence export, policy, and seed completeness.

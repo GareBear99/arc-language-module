@@ -1,4 +1,7 @@
 language_id,iso639_3,name,aliases
-lang:ron,ron,Romanian,Română|Rumanian
-lang:ces,ces,Czech,Čeština|Czech
-lang:nav,nav,Navajo,Diné Bizaad|Navajo
+lang:nav,nav,Navajo,Diné bizaad|Navaho
+lang:chr,chr,Cherokee,ᏣᎳᎩ|Tsalagi
+lang:crk,crk,Plains Cree,nēhiyawēwin
+lang:swa,swa,Swahili,Kiswahili
+lang:amh,amh,Amharic,አማርኛ
+lang:msa,msa,Malay,Bahasa Melayu
