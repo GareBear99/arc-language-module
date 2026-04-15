@@ -3,6 +3,7 @@ from arc_lang.core.db import connect
 
 
 def get_etymology(language_id: str, lemma: str) -> dict:
+    """Return etymology edges for a given lemma in a language."""
     with connect() as conn:
         lex = conn.execute(
             "SELECT lexeme_id, language_id, lemma, gloss, canonical_meaning_key FROM lexemes WHERE language_id = ? AND lower(lemma) = lower(?) LIMIT 1",

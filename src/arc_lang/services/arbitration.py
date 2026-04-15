@@ -2,16 +2,23 @@ from __future__ import annotations
 from collections import defaultdict
 from arc_lang.core.db import connect
 
-SOURCE_WEIGHTS = {
+# Fallback weights used only when source_weights table is empty or source is unknown.
+# These are also the seeded defaults — operators can override via set-source-weight CLI.
+_FALLBACK_SOURCE_WEIGHTS: dict[str, float] = {
+    'iso639_3': 1.0,
+    'glottolog': 0.95,
+    'cldr': 0.9,
+    'common_seed': 0.85,
     'canonical_import': 1.0,
     'common_seed_local': 0.7,
-    'common_seed': 0.9,
     'user_submission': 0.65,
     'user_custom': 0.55,
     'local': 0.6,
 }
+
 STATUS_WEIGHTS = {
     None: 1.0,
+    'canonical': 1.0,        # source-backed canonical lineage edges
     'user_asserted': 0.65,
     'needs_review': 0.55,
     'accepted_local': 1.0,
@@ -27,16 +34,34 @@ DECISION_WEIGHTS = {
 }
 
 
-def _source_weight(source_name: str | None) -> float:
+def _load_source_weights(conn) -> dict[str, float]:
+    """Load authority weights from DB, merging over fallback defaults.
+    DB values always win over fallback defaults.
+    Unknown sources receive a default of 0.75.
+    """
+    db_weights = {r['source_name']: r['authority_weight'] for r in conn.execute(
+        "SELECT source_name, authority_weight FROM source_weights"
+    ).fetchall()}
+    merged = {**_FALLBACK_SOURCE_WEIGHTS, **db_weights}
+    return merged
+
+
+def _source_weight_from(source_name: str | None, weights: dict[str, float]) -> float:
+    """Return the authority weight for a source name from the provided weights dict."""
     if not source_name:
         return 0.75
-    for prefix, weight in SOURCE_WEIGHTS.items():
-        if source_name == prefix or source_name.startswith(prefix):
+    # Exact match first
+    if source_name in weights:
+        return weights[source_name]
+    # Prefix match (e.g. 'common_seed_local' matches 'common_seed')
+    for prefix, weight in weights.items():
+        if source_name.startswith(prefix):
             return weight
     return 0.75
 
 
 def _latest_decision(conn, target_type: str, target_id: str) -> str | None:
+    """Return the latest review decision for a target entity, or None."""
     row = conn.execute(
         'SELECT decision FROM review_decisions WHERE target_type = ? AND target_id = ? ORDER BY created_at DESC LIMIT 1',
         (target_type, target_id),
@@ -45,6 +70,7 @@ def _latest_decision(conn, target_type: str, target_id: str) -> str | None:
 
 
 def _fetch_name(conn, entity_id: str) -> str | None:
+    """Return the human-readable name for a language or lineage node ID."""
     if entity_id.startswith('lang:'):
         row = conn.execute('SELECT name FROM languages WHERE language_id = ?', (entity_id,)).fetchone()
         return row['name'] if row else None
@@ -53,6 +79,7 @@ def _fetch_name(conn, entity_id: str) -> str | None:
 
 
 def _canonical_claims(conn, language_id: str) -> list[dict]:
+    """Collect all canonical lineage claims (from lineage_edges + implicit family/branch) for a language."""
     claims = []
     rows = conn.execute(
         '''
@@ -126,6 +153,7 @@ def _canonical_claims(conn, language_id: str) -> list[dict]:
 
 
 def _custom_claims(conn, language_id: str) -> list[dict]:
+    """Collect all custom lineage assertion claims for a language."""
     claims = []
     rows = conn.execute(
         '''
@@ -146,9 +174,10 @@ def _custom_claims(conn, language_id: str) -> list[dict]:
     return claims
 
 
-def _score_claim(claim: dict) -> float:
+def _score_claim(claim: dict, source_weights: dict[str, float]) -> float:
+    """Compute the effective arbitration score for a single lineage claim."""
     base = float(claim.get('confidence') or 0.0)
-    source_factor = _source_weight(claim.get('source_name'))
+    source_factor = _source_weight_from(claim.get('source_name'), source_weights)
     status_factor = STATUS_WEIGHTS.get(claim.get('status'), 0.75)
     decision_factor = DECISION_WEIGHTS.get(claim.get('review_decision'), 1.0)
     dispute_factor = 0.6 if int(claim.get('disputed') or 0) else 1.0
@@ -157,6 +186,7 @@ def _score_claim(claim: dict) -> float:
 
 
 def _relation_bucket(relation: str) -> str:
+    """Map a lineage relation string to a canonical bucket name (family/branch/parent)."""
     if 'family' in relation:
         return 'family'
     if 'branch' in relation:
@@ -167,8 +197,10 @@ def _relation_bucket(relation: str) -> str:
 
 
 def resolve_effective_lineage(language_id: str) -> dict:
+    """Resolve effective lineage for a language via weighted arbitration of canonical and custom claims."""
     with connect() as conn:
-        source_weights = {r['source_name']: r['authority_weight'] for r in conn.execute("SELECT source_name, authority_weight FROM source_weights").fetchall()}
+        # Always load current DB weights — operator changes via set-source-weight take effect here
+        source_weights = _load_source_weights(conn)
         lang = conn.execute(
             'SELECT language_id, name, family, branch, family_node_id, branch_node_id, parent_language_id FROM languages WHERE language_id = ?',
             (language_id,),
@@ -180,7 +212,7 @@ def resolve_effective_lineage(language_id: str) -> dict:
             claim['dst_name'] = _fetch_name(conn, claim['dst_id'])
             claim['src_name'] = _fetch_name(conn, claim['src_id'])
             claim['bucket'] = _relation_bucket(claim['relation'])
-            claim['effective_score'] = _score_claim(claim)
+            claim['effective_score'] = _score_claim(claim, source_weights)
         grouped: dict[str, list[dict]] = defaultdict(list)
         for claim in claims:
             grouped[claim['bucket']].append(claim)
@@ -215,9 +247,10 @@ def resolve_effective_lineage(language_id: str) -> dict:
             'effective_truth': winners,
             'conflicts': conflicts,
             'policy': {
-                'source_weights': SOURCE_WEIGHTS,
+                'source_weights': source_weights,   # now reflects live DB state
                 'status_weights': STATUS_WEIGHTS,
                 'decision_weights': DECISION_WEIGHTS,
                 'conflict_margin_lt': 0.2,
             },
         }
+

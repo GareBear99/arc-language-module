@@ -22,6 +22,7 @@ def _walk_node_chain(conn, node_id: str | None) -> list[dict]:
 
 
 def get_lineage(language_id: str) -> dict:
+    """Return the full lineage graph (nodes and edges) for a language."""
     with connect() as conn:
         lang = conn.execute(
             "SELECT language_id, name, family, branch, parent_language_id, family_node_id, branch_node_id FROM languages WHERE language_id = ?",

@@ -19,6 +19,7 @@ def _pair_note_summary(readiness_result: dict) -> str:
 
 
 def build_translation_install_plan(source_language_id: str, target_language_id: str, provider_name: str = 'argos_local') -> dict:
+    """Generate a translation install plan for a source→target pair and provider."""
     readiness = get_translation_pair_readiness(source_language_id, target_language_id, provider_name=provider_name)
     if not readiness.get('ok'):
         return readiness
@@ -104,6 +105,7 @@ def build_translation_install_plan(source_language_id: str, target_language_id: 
 
 
 def record_translation_install_plan(source_language_id: str, target_language_id: str, provider_name: str = 'argos_local', notes: list[str] | None = None) -> dict:
+    """Record a translation install plan in the database."""
     plan = build_translation_install_plan(source_language_id, target_language_id, provider_name=provider_name)
     if not plan.get('ok'):
         return plan
@@ -135,6 +137,7 @@ def record_translation_install_plan(source_language_id: str, target_language_id:
 
 
 def list_translation_install_plans(provider_name: str | None = None, source_language_id: str | None = None, target_language_id: str | None = None, limit: int = 50) -> dict:
+    """List translation install plans, optionally filtered by provider, source, and target language."""
     q = "SELECT * FROM translation_install_plans WHERE 1=1"
     params: list[object] = []
     if provider_name:

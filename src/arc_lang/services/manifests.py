@@ -8,6 +8,7 @@ from arc_lang.core.models import utcnow
 
 
 def seed_manifests(backend_path: str | Path | None = None, corpus_path: str | Path | None = None) -> dict:
+    """Seed default backend and corpus manifests from config files."""
     backend_payload = json.loads(Path(backend_path or BACKEND_MANIFEST_PATH).read_text(encoding='utf-8'))
     corpus_payload = json.loads(Path(corpus_path or CORPUS_MANIFEST_PATH).read_text(encoding='utf-8'))
     now = utcnow()
@@ -41,6 +42,7 @@ def seed_manifests(backend_path: str | Path | None = None, corpus_path: str | Pa
 
 
 def list_backend_manifests(provider_name: str | None = None) -> dict:
+    """List backend manifests, optionally filtered by provider_name."""
     q = 'SELECT * FROM backend_manifests'
     params = []
     if provider_name:
@@ -57,6 +59,7 @@ def list_backend_manifests(provider_name: str | None = None) -> dict:
 
 
 def list_corpus_manifests(corpus_kind: str | None = None) -> dict:
+    """List corpus manifests, optionally filtered by corpus_kind."""
     q = 'SELECT * FROM corpus_manifests'
     params = []
     if corpus_kind:

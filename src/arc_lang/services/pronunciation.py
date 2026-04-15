@@ -24,6 +24,7 @@ def _fetch_profile(language_id: str) -> dict | None:
 
 
 def upsert_pronunciation_profile(language_id: str, profile_kind: str, romanization_scheme: str | None, ipa_hint: str | None, examples: dict[str, str], notes: str = '') -> dict:
+    """Create or update a pronunciation profile (romanization scheme, IPA hint, examples) for a language."""
     now = utcnow()
     profile_id = f"pron_{uuid.uuid5(uuid.NAMESPACE_URL, language_id + ':' + profile_kind).hex[:18]}"
     with connect() as conn:
@@ -40,6 +41,7 @@ def upsert_pronunciation_profile(language_id: str, profile_kind: str, romanizati
 
 
 def list_pronunciation_profiles(language_id: str | None = None) -> dict:
+    """List pronunciation profiles, optionally filtered by language_id."""
     query = "SELECT profile_id, language_id, profile_kind, romanization_scheme, ipa_hint, examples_json, notes, created_at, updated_at FROM pronunciation_profiles"
     params = []
     if language_id:
@@ -54,6 +56,7 @@ def list_pronunciation_profiles(language_id: str | None = None) -> dict:
 
 
 def pronunciation_guide(req: PronunciationRequest) -> dict:
+    """Return pronunciation guidance for text in a language, from seeded pronunciation profiles."""
     detection = None
     language_id = req.language_id
     if not language_id and req.allow_detect:

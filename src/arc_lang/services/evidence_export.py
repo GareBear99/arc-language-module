@@ -16,6 +16,7 @@ from arc_lang.services.package_lifecycle import list_translation_install_plans
 
 
 def export_evidence_bundle(output_path: str, language_ids: list[str] | None = None, include_receipts: bool = True, include_runtime: bool = True, include_graph: bool = True) -> dict:
+    """Export a full operator evidence bundle (system status, providers, lineage, receipts) to JSON."""
     language_ids = language_ids or []
     bundle = {
         "schema": "arc_language_module_evidence_bundle_v1",

@@ -6,15 +6,30 @@ from arc_lang.core.models import RuntimeTranslateRequest, TranslateExplainQuery
 from arc_lang.services.translate_explain import translate_explain
 
 ISO6393_TO_RUNTIME = {
+    # Major world languages
     'eng': 'en', 'spa': 'es', 'fra': 'fr', 'deu': 'de', 'ita': 'it', 'por': 'pt',
-    'rus': 'ru', 'ukr': 'uk', 'zho': 'zh', 'jpn': 'ja', 'kor': 'ko', 'ara': 'ar',
+    'rus': 'ru', 'ukr': 'uk', 'jpn': 'ja', 'kor': 'ko',
     'hin': 'hi', 'ben': 'bn', 'mar': 'mr', 'urd': 'ur', 'tam': 'ta', 'tel': 'te',
     'pan': 'pa', 'heb': 'he', 'tha': 'th', 'nld': 'nl', 'pol': 'pl', 'tur': 'tr',
-    'vie': 'vi', 'ind': 'id', 'ron': 'ro', 'ces': 'cs', 'ell': 'el',
+    'vie': 'vi', 'ind': 'id',
+    # Seeded language-specific ISO codes
+    'arb': 'ar',   # Arabic (Modern Standard) — iso arb, runtime code ar
+    'cmn': 'zh',   # Mandarin Chinese — iso cmn, runtime code zh
+    'yue': 'yue',  # Cantonese — iso yue, runtime code yue (limited Argos support)
+    'fas': 'fa',   # Persian/Farsi
+    'msa': 'ms',   # Malay
+    'swa': 'sw',   # Swahili
+    'amh': 'am',   # Amharic
+    # Low-resource / Indigenous — runtime codes exist but Argos coverage is absent
+    'nav': 'nav',  # Navajo — no known Argos package; runtime stub only
+    'chr': 'chr',  # Cherokee — no known Argos package; runtime stub only
+    'crk': 'crk',  # Plains Cree — no known Argos package; runtime stub only
+    'ell': 'el',   # Greek (Modern)
 }
 
 
 def _language_codes(language_id: str) -> dict:
+    """Return language code information (language_id, iso639_3, runtime_code, name) for a language."""
     with connect() as conn:
         row = conn.execute(
             "SELECT language_id, iso639_3, name FROM languages WHERE language_id = ?",
@@ -32,6 +47,7 @@ def _language_codes(language_id: str) -> dict:
 
 
 def _argostranslate_available() -> bool:
+    """Return True if the argostranslate library is installed."""
     return importlib.util.find_spec('argostranslate') is not None
 
 
@@ -39,6 +55,7 @@ class TranslationBackend:
     name = 'base'
 
     def translate(self, req: RuntimeTranslateRequest, source_language_id: str) -> dict:
+        """Execute a translation request through this backend adapter and return the result dict."""
         raise NotImplementedError
 
 
@@ -46,6 +63,7 @@ class LocalSeedTranslationBackend(TranslationBackend):
     name = 'local_seed'
 
     def translate(self, req: RuntimeTranslateRequest, source_language_id: str) -> dict:
+        """Execute a translation through this backend and return a result dict with ok, provider, translation, and notes."""
         result = translate_explain(TranslateExplainQuery(
             text=req.text,
             source_language_id=source_language_id,
@@ -73,6 +91,7 @@ class MirrorTranslationBackend(TranslationBackend):
     name = 'mirror_mock'
 
     def translate(self, req: RuntimeTranslateRequest, source_language_id: str) -> dict:
+        """Execute a translation through this backend and return a result dict with ok, provider, translation, and notes."""
         if source_language_id != req.target_language_id:
             return {
                 'ok': False,
@@ -103,6 +122,7 @@ class ArgosLocalTranslationBackend(TranslationBackend):
     name = 'argos_local'
 
     def translate(self, req: RuntimeTranslateRequest, source_language_id: str) -> dict:
+        """Execute a translation through this backend and return a result dict with ok, provider, translation, and notes."""
         if not _argostranslate_available():
             return {
                 'ok': False,
@@ -198,6 +218,7 @@ class BoundaryStubTranslationBackend(TranslationBackend):
         self.name = name
 
     def translate(self, req: RuntimeTranslateRequest, source_language_id: str) -> dict:
+        """Execute a translation through this backend and return a result dict with ok, provider, translation, and notes."""
         payload = {
             'provider': self.name,
             'source_language_id': source_language_id,
@@ -248,6 +269,7 @@ BUILTIN_TRANSLATION_BACKENDS = {
 
 
 def get_translation_backend(name: str | None) -> TranslationBackend | None:
+    """Return a TranslationBackend instance by provider name, or None."""
     if not name:
         return None
     factory = BUILTIN_TRANSLATION_BACKENDS.get(name)
@@ -257,6 +279,7 @@ def get_translation_backend(name: str | None) -> TranslationBackend | None:
 
 
 def list_builtin_translation_backends() -> dict:
+    """List all built-in translation backends with their kind, live_execution status, and dependency notes."""
     argos_available = _argostranslate_available()
     return {
         'ok': True,

@@ -44,6 +44,7 @@ def _safe_argos_import():
 
 
 def get_argos_local_diagnostics() -> dict:
+    """Return diagnostic information for the argos_local optional translation backend."""
     argos_translate, meta = _safe_argos_import()
     result = {
         "ok": True,
@@ -92,6 +93,7 @@ def get_argos_local_diagnostics() -> dict:
 
 
 def get_provider_diagnostics(provider_name: str | None = None) -> dict:
+    """Return diagnostic information for all providers, or a specific named provider."""
     if provider_name and provider_name == 'argos_local':
         return get_argos_local_diagnostics()
     if provider_name:
@@ -142,6 +144,7 @@ def _provider_ready_state(provider_name: str) -> tuple[str, list[str], dict | No
 
 
 def get_translation_pair_readiness(source_language_id: str, target_language_id: str, provider_name: str | None = None) -> dict:
+    """Return readiness verdict for a source→target translation pair via a named provider."""
     source = _runtime_code_for_language(source_language_id)
     target = _runtime_code_for_language(target_language_id)
     if not source['exists'] or not target['exists']:
@@ -229,6 +232,7 @@ def get_translation_pair_readiness(source_language_id: str, target_language_id: 
 
 
 def get_translation_readiness_matrix(target_language_id: str | None = None, provider_name: str | None = None, limit: int = 25) -> dict:
+    """Return translation readiness across all known languages for a given provider."""
     with connect() as conn:
         if target_language_id:
             target_ids = [target_language_id]

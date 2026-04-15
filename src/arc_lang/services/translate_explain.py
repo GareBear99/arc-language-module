@@ -10,6 +10,7 @@ from arc_lang.core.models import AnalysisRequest, PronunciationRequest
 
 
 def _find_canonical_key(conn, source_language_id: str, text: str) -> str | None:
+    """Find the canonical phrase key for a text in a source language."""
     row = conn.execute(
         """
         SELECT canonical_key FROM phrase_translations
@@ -22,6 +23,7 @@ def _find_canonical_key(conn, source_language_id: str, text: str) -> str | None:
 
 
 def _find_lexeme(conn, language_id: str, lemma: str):
+    """Find a lexeme record by language and lemma."""
     return conn.execute(
         "SELECT lexeme_id, language_id, lemma, gloss, canonical_meaning_key FROM lexemes WHERE language_id = ? AND lower(lemma) = lower(?) LIMIT 1",
         (language_id, lemma),
@@ -29,6 +31,7 @@ def _find_lexeme(conn, language_id: str, lemma: str):
 
 
 def translate_explain(query: TranslateExplainQuery) -> dict:
+    """Look up a phrase translation and return it with etymology, lineage, and pronunciation context."""
     source_language_id = query.source_language_id
     detection = None
     if not source_language_id and query.allow_detect:

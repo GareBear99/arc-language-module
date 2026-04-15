@@ -18,6 +18,7 @@ def _record(mode: str, object_type: str, path: str, dry_run: bool, count: int, s
 
 
 def batch_import(req: BatchImportRequest) -> dict:
+    """Batch-import language submissions, aliases, lineage assertions, or relationships from a JSON file."""
     payload = json.loads(Path(req.input_path).read_text(encoding='utf-8'))
     items = payload.get('items', payload if isinstance(payload, list) else [])
     results = []
@@ -38,6 +39,7 @@ def batch_import(req: BatchImportRequest) -> dict:
 
 
 def batch_export(req: BatchExportRequest) -> dict:
+    """Batch-export languages, aliases, relationships, or a full lineage bundle to a JSON file."""
     out = {'object_type': req.object_type, 'items': []}
     with connect() as conn:
         if req.object_type == 'languages':
@@ -75,6 +77,7 @@ def batch_export(req: BatchExportRequest) -> dict:
 
 
 def list_batch_runs(mode: str | None = None, object_type: str | None = None) -> dict:
+    """List batch import/export run records, optionally filtered by mode and object_type."""
     q = "SELECT * FROM batch_io_runs"
     params = []
     clauses = []

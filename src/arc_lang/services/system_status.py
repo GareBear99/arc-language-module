@@ -14,6 +14,7 @@ def _count(query: str, params: tuple = ()) -> int:
 
 
 def get_system_status() -> dict:
+    """Return a full system status snapshot: graph, providers, health, governance, receipts, policy."""
     stats = get_graph_stats()
     providers = list_providers().get("results", [])
     provider_summary = {

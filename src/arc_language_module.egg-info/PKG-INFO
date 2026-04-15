@@ -1,0 +1,171 @@
+Metadata-Version: 2.4
+Name: arc-language-module
+Version: 0.24.0
+Summary: Language, script, lineage, transliteration, phrase translation, and optional speech module
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic>=2.6
+Requires-Dist: fastapi>=0.110
+Provides-Extra: argos
+Requires-Dist: argostranslate>=1.9; extra == "argos"
+Provides-Extra: server
+Requires-Dist: uvicorn>=0.28; extra == "server"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+
+# ARC Language Module v0.24
+
+A governed, auditable multilingual language/script/lineage substrate.
+Separates graph truth from runtime capability, and package-owned data from external corpus dependencies.
+
+---
+
+## What this package actually is
+
+- A **SQLite-backed language graph** covering 34 seeded languages, 14 families, scripts, aliases, lineage edges, and phonology/transliteration profiles.
+- A **governed ingestion pipeline** for Glottolog-style, ISO 639-3-style, and CLDR-style corpora — with dry-run mode, conflict detection, dedup reporting, and provenance tracking.
+- A **runtime routing layer** that separates knowing a language exists from being able to translate or speak it.
+- An **operator tooling layer**: acquisition workspace, coverage reports, implementation matrix, evidence bundles, conflict review exports.
+- An **honest gap-tracking system**: every missing corpus is declared in manifests; every unsupported runtime is marked explicitly; no fake support.
+
+---
+
+## What this package is not
+
+- A full translation engine (local seeded phrase translation only; Argos/NLLB are optional external dependencies)
+- A full TTS/speech system (PersonaPlex and similar are boundary stubs only)
+- A complete phonemic inventory (phonology profiles are broad IPA hints, not full phoneme sets)
+- A character-level transliteration engine (profiles declare schemes; mapping tables are not bundled)
+
+---
+
+## Quick start
+
+```bash
+pip install -e .
+
+python -m arc_lang.cli.main init-db
+python -m arc_lang.cli.main seed-common-languages
+python -m arc_lang.cli.main stats
+python -m arc_lang.cli.main detect "hola gracias"
+python -m arc_lang.cli.main lineage lang:spa
+python -m arc_lang.cli.main coverage-report
+python -m arc_lang.cli.main system-status
+```
+
+---
+
+## Core capabilities (package-owned, complete)
+
+| Surface | CLI | API |
+|---------|-----|-----|
+| Language graph (34 languages, 14 families) | `stats`, `search-languages`, `lineage` | `GET /stats`, `GET /lineage/{id}` |
+| Script detection + transliteration | `detect-script`, `transliterate` | `GET /detect`, `GET /transliterate` |
+| Language aliases (endonym/exonym/romanized) | `upsert-language-alias`, `list-language-aliases` | `POST /aliases/upsert` |
+| Language variants (dialect/register/orthography) | `upsert-language-variant` | `POST /languages/variants/upsert` |
+| Custom lineage assertions + arbitration | `add-custom-lineage`, `effective-lineage` | `POST /lineage/custom` |
+| Language submission + governance review | `submit-language-inline`, `review-target` | `POST /languages/submit` |
+| Phonology profiles (12 languages seeded) | `upsert-phonology-profile`, `phonology-hint` | `POST /phonology/profiles/upsert` |
+| Transliteration profiles (11 entries seeded) | `upsert-transliteration-profile` | `POST /transliterate` |
+| Semantic concept graph | `upsert-semantic-concept`, `link-concept` | `POST /concepts/upsert` |
+| Provider registry + health | `register-provider`, `set-provider-health` | `POST /providers/register` |
+| Runtime routing (translation + speech) | `runtime-translate`, `runtime-speak` | `POST /runtime/translate` |
+| Runtime receipts | `list-runtime-receipts` | `GET /runtime/receipts` |
+| Provider action catalogs + execution | `provider-action-catalog`, `execute-provider-action` | `POST /providers/actions/execute` |
+| Translation install plans | `translation-install-plan` | `GET /runtime/install-plan/translation` |
+| Operator policy | `show-policy`, `set-policy` | `GET /policy` |
+| System status | `system-status` | `GET /system-status` |
+| Evidence export | `export-evidence` | `POST /evidence/export` |
+| Conflict review export | `export-conflict-review` | `POST /conflicts/export` |
+| Coverage report | `coverage-report` | `POST /coverage/report` |
+| Implementation matrix | `build-implementation-matrix` | `POST /implementation-matrix` |
+| Acquisition workspace | `plan-acquisition-job`, `validate-staged-asset`, `export-ingestion-workspace` | `POST /acquisition/jobs` |
+| Batch import/export | `batch-import`, `batch-export` | `POST /batch/import` |
+| Source authority weights | `set-source-weight`, `list-source-weights` | `POST /sources/weights/set` |
+
+---
+
+## Ingestion
+
+```bash
+# Dry-run first (no writes, shows conflicts and record counts)
+python -m arc_lang.cli.main import-glottolog-fixture path/to/glottolog.csv --dry-run
+
+# Live import
+python -m arc_lang.cli.main import-glottolog-fixture path/to/glottolog.csv
+python -m arc_lang.cli.main import-iso-fixture path/to/iso639-3.csv
+python -m arc_lang.cli.main import-cldr-fixture path/to/cldr.json
+```
+
+All imports: idempotent, provenance-tracked, dedup-reported (inserted vs updated), conflict-aware.
+
+---
+
+## Coverage reporting
+
+```bash
+python -m arc_lang.cli.main coverage-report
+python -m arc_lang.cli.main coverage-report --language-id lang:jpn --language-id lang:kor
+python -m arc_lang.cli.main coverage-report --output-path coverage.json
+```
+
+Coverage reports include per-language: alias count by type, script count, phonology profiles,
+transliteration profiles, lineage edge count, capability summary, and 4 honest gap flags
+(`missing_phonology`, `missing_transliteration`, `missing_pronunciation`, `missing_script`).
+
+---
+
+## Phonology
+
+12 languages have seeded broad IPA phonology profiles: English, Spanish, French, German,
+Russian, Hindi, Japanese, Korean, Mandarin Chinese, Arabic (MSA), Turkish, Thai.
+
+```bash
+python -m arc_lang.cli.main phonology-hint "こんにちは" lang:jpn
+python -m arc_lang.cli.main list-phonology-profiles --language-id lang:rus
+```
+
+These are **hints only** — not full phonemic inventories. See `docs/IMPLEMENTATION_MANIFESTS_AND_PHONOLOGY.md`.
+
+---
+
+## Acquisition workspace
+
+```bash
+python -m arc_lang.cli.main plan-acquisition-job Glottolog --stage-name staging
+python -m arc_lang.cli.main record-staged-asset <job_id> /path/to/file.csv --asset-kind csv
+python -m arc_lang.cli.main validate-staged-asset /path/to/file.csv csv
+python -m arc_lang.cli.main list-acquisition-jobs
+python -m arc_lang.cli.main export-ingestion-workspace workspace.json
+```
+
+---
+
+## External dependencies (not installed by default)
+
+| Provider | What it enables | How to enable |
+|----------|----------------|---------------|
+| `argostranslate` | Local neural machine translation | `pip install argostranslate` + model download |
+| NLLB | Large-scale neural MT | External model server (bridge stub only) |
+| PersonaPlex | Neural speech synthesis | NVIDIA API (boundary stub only) |
+
+The package will run fully without any of these. External providers are declared in backend manifests
+and tracked in the implementation matrix. Runtime routing will report `unavailable` for unsupported
+pairs rather than silently failing.
+
+---
+
+## Running tests
+
+```bash
+python -m pytest tests/ -q
+# 99 tests, all pass
+```
+
+---
+
+## Architecture
+
+See `docs/ARCHITECTURE.md` for the full separation of concerns:
+language vs script, lineage vs identifier, translation equivalence vs etymological relatedness,
+pronunciation hint vs phonology truth, graph truth vs runtime capability.

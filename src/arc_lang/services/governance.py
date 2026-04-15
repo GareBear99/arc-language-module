@@ -11,6 +11,7 @@ MATURITY_ORDER = {'none': 0, 'seeded': 1, 'experimental': 2, 'reviewed': 3, 'pro
 
 
 def record_review_decision(req: ReviewDecisionRequest) -> dict:
+    """Record a governance review decision for a language submission or custom assertion."""
     if req.target_type not in REVIEW_TARGETS:
         return {'ok': False, 'error': 'invalid_target_type', 'allowed_target_types': sorted(REVIEW_TARGETS)}
     if req.decision not in REVIEW_DECISIONS:
@@ -43,6 +44,7 @@ def record_review_decision(req: ReviewDecisionRequest) -> dict:
 
 
 def list_review_decisions(target_type: str | None = None, target_id: str | None = None) -> dict:
+    """List governance review decisions, optionally filtered by target_type and target_id."""
     clauses=[]
     params=[]
     if target_type:
@@ -58,6 +60,7 @@ def list_review_decisions(target_type: str | None = None, target_id: str | None 
 
 
 def set_language_capability(req: CapabilityUpdateRequest) -> dict:
+    """Set a capability maturity record for a language."""
     now = utcnow()
     capability_id = f"cap_{uuid.uuid4().hex[:12]}"
     with connect() as conn:
@@ -81,6 +84,7 @@ def set_language_capability(req: CapabilityUpdateRequest) -> dict:
 
 
 def list_language_capabilities(language_id: str | None = None) -> dict:
+    """List language capability records, optionally filtered by language_id."""
     with connect() as conn:
         if language_id:
             rows=[dict(r) for r in conn.execute('SELECT * FROM language_capabilities WHERE language_id = ? ORDER BY capability_name, provider', (language_id,)).fetchall()]
@@ -90,6 +94,7 @@ def list_language_capabilities(language_id: str | None = None) -> dict:
 
 
 def get_language_readiness(language_id: str) -> dict:
+    """Return the full readiness summary for a language (all capabilities + maturity)."""
     with connect() as conn:
         lang = conn.execute('SELECT language_id, name FROM languages WHERE language_id = ?', (language_id,)).fetchone()
         if not lang:

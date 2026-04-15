@@ -6,6 +6,7 @@ from arc_lang.core.models import utcnow
 
 
 def create_job_receipt(job_type: str, provider_name: str | None, request_payload: dict, response_payload: dict, status: str, notes: list[str] | None = None) -> dict:
+    """Create and store a runtime job receipt (translation or speech request/response pair)."""
     receipt_id = f"rcpt_{uuid.uuid4().hex[:12]}"
     now = utcnow()
     with connect() as conn:
@@ -32,6 +33,7 @@ def create_job_receipt(job_type: str, provider_name: str | None, request_payload
 
 
 def list_job_receipts(job_type: str | None = None, provider_name: str | None = None, limit: int = 50) -> dict:
+    """List job receipts, optionally filtered by job_type and provider_name."""
     q = "SELECT receipt_id, job_type, provider_name, status, request_payload_json, response_payload_json, notes_json, created_at FROM job_receipts"
     clauses = []
     params = []

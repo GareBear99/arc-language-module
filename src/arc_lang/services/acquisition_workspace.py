@@ -21,6 +21,7 @@ def _sha256(path: Path) -> str:
 
 
 def plan_acquisition_job(req: AcquisitionJobRequest) -> dict:
+    """Create a new acquisition job for a named corpus manifest entry."""
     with connect() as conn:
         row = conn.execute('SELECT * FROM corpus_manifests WHERE corpus_name=?', (req.corpus_name,)).fetchone()
         if not row:
@@ -39,6 +40,7 @@ def plan_acquisition_job(req: AcquisitionJobRequest) -> dict:
 
 
 def record_staged_asset(req: StagedAssetRequest) -> dict:
+    """Record a staged file asset for an existing acquisition job, computing SHA-256 and file size."""
     path = Path(req.file_path)
     if not path.exists():
         return {'ok': False, 'error': 'file_not_found', 'file_path': req.file_path}
@@ -59,6 +61,7 @@ def record_staged_asset(req: StagedAssetRequest) -> dict:
 
 
 def validate_staged_asset(req: ValidationReportRequest) -> dict:
+    """Validate a staged asset file: detect its kind and compare against the expected kind."""
     path = Path(req.file_path)
     if not path.exists():
         return {'ok': False, 'error': 'file_not_found', 'file_path': req.file_path}
@@ -103,6 +106,7 @@ def validate_staged_asset(req: ValidationReportRequest) -> dict:
 
 
 def list_acquisition_jobs(corpus_name: str | None = None) -> dict:
+    """List acquisition jobs, optionally filtered by corpus_name."""
     q = 'SELECT * FROM acquisition_jobs'
     params = []
     if corpus_name:
@@ -115,6 +119,7 @@ def list_acquisition_jobs(corpus_name: str | None = None) -> dict:
 
 
 def list_validation_reports(limit: int = 50) -> dict:
+    """List staged-asset validation reports, most recent first."""
     with connect() as conn:
         rows = [dict(r) for r in conn.execute('SELECT * FROM validation_reports ORDER BY created_at DESC LIMIT ?', (limit,)).fetchall()]
     for row in rows:
@@ -123,6 +128,7 @@ def list_validation_reports(limit: int = 50) -> dict:
 
 
 def export_ingestion_workspace(req: IngestionWorkspaceExportRequest) -> dict:
+    """Export the full ingestion workspace bundle (manifests, runs, validation reports, jobs) to JSON."""
     bundle = {'ok': True, 'workspace': {}}
     with connect() as conn:
         if req.include_corpus_manifests:

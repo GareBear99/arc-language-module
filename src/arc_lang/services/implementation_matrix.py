@@ -9,6 +9,7 @@ from arc_lang.services.manifests import list_backend_manifests, list_corpus_mani
 
 
 def build_implementation_matrix(output_path: str | None = None) -> dict:
+    """Generate an implementation matrix report separating package-owned from external dependencies."""
     stats = get_graph_stats().get('counts', {})
     backends = list_backend_manifests().get('results', [])
     corpora = list_corpus_manifests().get('results', [])
@@ -44,6 +45,7 @@ def build_implementation_matrix(output_path: str | None = None) -> dict:
 
 
 def list_implementation_matrix_reports(limit: int = 20) -> dict:
+    """List implementation matrix report records, most recent first."""
     with connect() as conn:
         rows = [dict(r) for r in conn.execute('SELECT * FROM implementation_matrix_reports ORDER BY created_at DESC LIMIT ?', (limit,)).fetchall()]
     for row in rows:

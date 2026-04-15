@@ -347,3 +347,13 @@ class IngestionWorkspaceExportRequest(BaseModel):
     include_batch_runs: bool = True
     include_validation_reports: bool = True
     include_jobs: bool = True
+
+
+class PhonologyProfileUpsertRequest(BaseModel):
+    language_id: str = Field(min_length=5, max_length=64)
+    notation_system: str = Field(min_length=3, max_length=40)
+    broad_ipa: str | None = None
+    stress_policy: str | None = None
+    syllable_template: str | None = None
+    examples: dict[str, str] = Field(default_factory=dict)
+    notes: str = ''

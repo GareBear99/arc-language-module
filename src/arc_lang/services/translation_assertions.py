@@ -5,6 +5,7 @@ from arc_lang.core.models import TranslationExplainRequest, utcnow
 
 
 def create_translation_assertion(req: TranslationExplainRequest) -> dict:
+    """Create and store a translation assertion with provenance."""
     assertion_id = f"ta_{uuid.uuid4().hex[:12]}"
     now = utcnow()
     with connect() as conn:

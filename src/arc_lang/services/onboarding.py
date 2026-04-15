@@ -19,6 +19,7 @@ def _norm_list(values: list[str]) -> list[str]:
 
 
 def submit_language(req: LanguageSubmissionRequest) -> dict:
+    """Submit a new language for review via the onboarding workflow."""
     now = utcnow()
     submission_id = f"lsub_{uuid.uuid4().hex[:12]}"
     status = req.status if req.status in ALLOWED_STATUSES else 'submitted'
@@ -57,6 +58,7 @@ def submit_language(req: LanguageSubmissionRequest) -> dict:
 
 
 def list_language_submissions(status: str | None = None) -> dict:
+    """List language submissions, optionally filtered by status."""
     with connect() as conn:
         if status:
             rows=[dict(r) for r in conn.execute('SELECT * FROM language_submissions WHERE status = ? ORDER BY updated_at DESC', (status,)).fetchall()]
@@ -66,6 +68,7 @@ def list_language_submissions(status: str | None = None) -> dict:
 
 
 def approve_language_submission(submission_id: str, status: str = 'approved') -> dict:
+    """Approve a language submission, promoting it to the canonical languages table."""
     if status not in ALLOWED_STATUSES:
         return {"ok": False, "error": 'invalid_status', 'allowed_statuses': sorted(ALLOWED_STATUSES)}
     now = utcnow()
@@ -98,6 +101,7 @@ def approve_language_submission(submission_id: str, status: str = 'approved') ->
 
 
 def export_language_submission_template(path: str | Path) -> dict:
+    """Export a blank language submission template to a JSON file."""
     payload = {
         'language_id': 'lang:example',
         'iso639_3': 'exm',
@@ -120,6 +124,7 @@ def export_language_submission_template(path: str | Path) -> dict:
 
 
 def import_language_submission_json(path: str | Path) -> dict:
+    """Import and submit a language from a JSON file."""
     payload = json.loads(Path(path).read_text(encoding='utf-8'))
     req = LanguageSubmissionRequest(**payload)
     return submit_language(req)

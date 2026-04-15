@@ -1,6 +1,6 @@
 from __future__ import annotations
 import sqlite3
-from arc_lang.core.config import DB_PATH, SQL_INIT_PATH
+from arc_lang.core.config import DB_PATH, SQL_INIT_PATH, SQL_DIR
 
 
 def connect() -> sqlite3.Connection:
@@ -12,7 +12,10 @@ def connect() -> sqlite3.Connection:
 def init_db() -> None:
     if DB_PATH.exists():
         DB_PATH.unlink()
-    sql = SQL_INIT_PATH.read_text(encoding="utf-8")
+    # Run all SQL migrations in order
+    migration_files = sorted(SQL_DIR.glob('*.sql'))
     with connect() as conn:
-        conn.executescript(sql)
+        for migration in migration_files:
+            sql = migration.read_text(encoding='utf-8')
+            conn.executescript(sql)
         conn.commit()

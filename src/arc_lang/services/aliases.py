@@ -5,6 +5,7 @@ from arc_lang.core.models import AliasUpsertRequest, utcnow
 
 
 def upsert_language_alias(req: AliasUpsertRequest) -> dict:
+    """Add or update a language alias (endonym, exonym, romanized, autonym, or alias type)."""
     now = utcnow()
     alias_id = f"alias_{req.language_id.replace(':','_')}_{req.alias_type}_{req.alias.lower().replace(' ','_')}"
     normalized = req.normalized_form or req.alias.casefold().strip()
@@ -29,6 +30,7 @@ def upsert_language_alias(req: AliasUpsertRequest) -> dict:
 
 
 def list_language_aliases(language_id: str | None = None, q: str | None = None) -> dict:
+    """List language aliases, optionally filtered by language_id or query string."""
     query = "SELECT * FROM language_aliases"
     params = []
     clauses = []

@@ -37,6 +37,8 @@ from arc_lang.services.variants import upsert_language_variant, list_language_va
 from arc_lang.services.conflict_review import export_conflict_review_bundle, list_conflict_review_exports
 from arc_lang.services.coverage import build_coverage_report, list_coverage_reports
 from arc_lang.services.acquisition_workspace import plan_acquisition_job, record_staged_asset, validate_staged_asset, list_acquisition_jobs, list_validation_reports, export_ingestion_workspace
+from arc_lang.services.phonology import upsert_phonology_profile, list_phonology_profiles, phonology_hint
+from arc_lang.services.implementation_matrix import build_implementation_matrix, list_implementation_matrix_reports
 
 
 def _dump(obj: object) -> None:
@@ -46,90 +48,111 @@ def _dump(obj: object) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(prog='arc-lang')
     sub = parser.add_subparsers(dest='cmd', required=True)
-    sub.add_parser('init-db')
-    sub.add_parser('seed-common-languages')
-    sub.add_parser('stats')
+    sub.add_parser('init-db', help='Initialize the SQLite database with the full schema.')
+    sub.add_parser('seed-common-languages', help='Seed all common languages, scripts, phrases, profiles, variants, and concepts.')
+    sub.add_parser('stats', help='Print graph statistics for all 41 tracked tables.')
 
-    p = sub.add_parser('detect'); p.add_argument('text')
-    p = sub.add_parser('detect-script'); p.add_argument('text')
-    p = sub.add_parser('lineage'); p.add_argument('language_id')
-    p = sub.add_parser('effective-lineage'); p.add_argument('language_id')
-    p = sub.add_parser('etymology'); p.add_argument('language_id'); p.add_argument('lemma')
-    p = sub.add_parser('search-languages'); p.add_argument('query'); p.add_argument('--limit', type=int, default=20)
-    p = sub.add_parser('transliterate'); p.add_argument('text'); p.add_argument('source_script'); p.add_argument('target_script', nargs='?', default='Latn')
-    p = sub.add_parser('translate-explain'); p.add_argument('text'); p.add_argument('target_language_id'); p.add_argument('--source-language-id')
-    p = sub.add_parser('pronounce'); p.add_argument('text'); p.add_argument('--language-id'); p.add_argument('--target-script', default='Latn')
-    p = sub.add_parser('analyze-text'); p.add_argument('text'); p.add_argument('--language-id'); p.add_argument('--no-pronunciation', action='store_true')
-    p = sub.add_parser('list-pronunciation-profiles'); p.add_argument('--language-id')
-    p = sub.add_parser('list-transliteration-profiles'); p.add_argument('--language-id')
-    p = sub.add_parser('upsert-transliteration-profile'); p.add_argument('language_id'); p.add_argument('source_script'); p.add_argument('target_script'); p.add_argument('scheme_name'); p.add_argument('coverage'); p.add_argument('--example-in'); p.add_argument('--example-out'); p.add_argument('--notes', default='')
-    p = sub.add_parser('import-glottolog-fixture'); p.add_argument('path')
-    p = sub.add_parser('import-iso-fixture'); p.add_argument('path')
-    p = sub.add_parser('import-cldr-fixture'); p.add_argument('path')
-    p = sub.add_parser('add-custom-lineage')
+    p = sub.add_parser('detect', help='Detect the language of input text.'); p.add_argument('text')
+    p = sub.add_parser('detect-script', help='Detect the writing script of input text.'); p.add_argument('text')
+    p = sub.add_parser('lineage', help='Show the lineage tree for a language.'); p.add_argument('language_id')
+    p = sub.add_parser('effective-lineage', help='Resolve effective lineage via arbitration (canonical + custom assertions).'); p.add_argument('language_id')
+    p = sub.add_parser('etymology', help='Show etymology edges for a lemma in a language.'); p.add_argument('language_id'); p.add_argument('lemma')
+    p = sub.add_parser('search-languages', help='Search languages by name, ISO code, family, or alias.'); p.add_argument('query'); p.add_argument('--limit', type=int, default=20)
+    p = sub.add_parser('transliterate', help='Transliterate text from one script to another.'); p.add_argument('text'); p.add_argument('source_script'); p.add_argument('target_script', nargs='?', default='Latn')
+    p = sub.add_parser('translate-explain', help='Translate text and return provenance, etymology, and pronunciation hints.'); p.add_argument('text'); p.add_argument('target_language_id'); p.add_argument('--source-language-id')
+    p = sub.add_parser('pronounce', help='Return pronunciation hints for text in a given language.'); p.add_argument('text'); p.add_argument('--language-id'); p.add_argument('--target-script', default='Latn')
+    p = sub.add_parser('analyze-text', help='Full linguistic analysis: script, tokens, lexeme lookup, transliteration, pronunciation.'); p.add_argument('text'); p.add_argument('--language-id'); p.add_argument('--no-pronunciation', action='store_true')
+    p = sub.add_parser('list-pronunciation-profiles', help='List pronunciation profiles, optionally filtered by language.'); p.add_argument('--language-id')
+    p = sub.add_parser('list-transliteration-profiles', help='List transliteration profiles, optionally filtered by language.'); p.add_argument('--language-id')
+    p = sub.add_parser('upsert-transliteration-profile', help='Create or update a transliteration profile for a language+script pair.'); p.add_argument('language_id'); p.add_argument('source_script'); p.add_argument('target_script'); p.add_argument('scheme_name'); p.add_argument('coverage'); p.add_argument('--example-in'); p.add_argument('--example-out'); p.add_argument('--notes', default='')
+    p = sub.add_parser('import-glottolog-fixture', help='Import a Glottolog-style genealogy CSV file.'); p.add_argument('path'); p.add_argument('--dry-run', action='store_true')
+    p = sub.add_parser('import-iso-fixture', help='Import an ISO 639-3-style identifier CSV file.'); p.add_argument('path'); p.add_argument('--dry-run', action='store_true')
+    p = sub.add_parser('import-cldr-fixture', help='Import a CLDR-style locale/script JSON file.'); p.add_argument('path'); p.add_argument('--dry-run', action='store_true')
+    p = sub.add_parser('add-custom-lineage', help='Add a custom lineage assertion between two nodes.')
     p.add_argument('src_id'); p.add_argument('dst_id'); p.add_argument('--relation', default='custom_member_of_family')
     p.add_argument('--confidence', type=float, default=0.7); p.add_argument('--disputed', action='store_true')
     p.add_argument('--source-name', default='user_custom'); p.add_argument('--source-ref'); p.add_argument('--notes', default=''); p.add_argument('--status', default='user_asserted')
-    p = sub.add_parser('list-custom-lineage'); p.add_argument('--src-id'); p.add_argument('--dst-id'); p.add_argument('--status')
-    p = sub.add_parser('submit-language-json'); p.add_argument('path')
-    p = sub.add_parser('submit-language-inline')
+    p = sub.add_parser('list-custom-lineage', help='List custom lineage assertions, optionally filtered.'); p.add_argument('--src-id'); p.add_argument('--dst-id'); p.add_argument('--status')
+    p = sub.add_parser('submit-language-json', help='Submit a new language from a JSON file.'); p.add_argument('path')
+    p = sub.add_parser('submit-language-inline', help='Submit a new language inline with CLI arguments.')
     p.add_argument('language_id'); p.add_argument('name'); p.add_argument('--iso639-3'); p.add_argument('--family'); p.add_argument('--branch'); p.add_argument('--parent-language-id')
     p.add_argument('--aliases', nargs='*', default=[]); p.add_argument('--common-words', nargs='*', default=[]); p.add_argument('--scripts', nargs='*', default=[])
     p.add_argument('--source-name', default='user_submission'); p.add_argument('--source-ref'); p.add_argument('--confidence', type=float, default=0.7)
     p.add_argument('--notes', default=''); p.add_argument('--status', default='submitted')
-    p = sub.add_parser('list-language-submissions'); p.add_argument('--status')
-    p = sub.add_parser('approve-language-submission'); p.add_argument('submission_id'); p.add_argument('--status', default='approved')
-    p = sub.add_parser('export-language-template'); p.add_argument('path')
-    p = sub.add_parser('review-target')
+    p = sub.add_parser('list-language-submissions', help='List language submissions, optionally filtered by status.'); p.add_argument('--status')
+    p = sub.add_parser('approve-language-submission', help='Approve a language submission (promotes to canonical).'); p.add_argument('submission_id'); p.add_argument('--status', default='approved')
+    p = sub.add_parser('export-language-template', help='Export a blank language submission template to a JSON file.'); p.add_argument('path')
+    p = sub.add_parser('review-target', help='Record a governance review decision for a submission or assertion.')
     p.add_argument('target_type'); p.add_argument('target_id'); p.add_argument('decision')
     p.add_argument('--reviewer', default='system_local'); p.add_argument('--confidence', type=float, default=0.8); p.add_argument('--notes', default='')
-    p = sub.add_parser('list-reviews'); p.add_argument('--target-type'); p.add_argument('--target-id')
-    p = sub.add_parser('set-language-capability')
+    p = sub.add_parser('list-reviews', help='List governance review decisions.'); p.add_argument('--target-type'); p.add_argument('--target-id')
+    p = sub.add_parser('set-language-capability', help='Set a capability maturity for a language.')
     p.add_argument('language_id'); p.add_argument('capability_name'); p.add_argument('maturity')
     p.add_argument('--confidence', type=float, default=0.75); p.add_argument('--provider', default='local'); p.add_argument('--notes', default='')
-    p = sub.add_parser('list-language-capabilities'); p.add_argument('--language-id')
-    p = sub.add_parser('language-readiness'); p.add_argument('language_id')
-    p = sub.add_parser('runtime-translate'); p.add_argument('text'); p.add_argument('target_language_id'); p.add_argument('--source-language-id'); p.add_argument('--preferred-translation-provider'); p.add_argument('--require-speech', action='store_true'); p.add_argument('--speech-provider'); p.add_argument('--voice-hint'); p.add_argument('--live', action='store_true')
-    p = sub.add_parser('runtime-speak'); p.add_argument('text'); p.add_argument('language_id'); p.add_argument('--provider'); p.add_argument('--voice-hint'); p.add_argument('--live', action='store_true')
-    p = sub.add_parser('register-provider'); p.add_argument('provider_name'); p.add_argument('provider_type'); p.add_argument('--disabled', action='store_true'); p.add_argument('--local-only', action='store_true'); p.add_argument('--notes', default='')
-    p = sub.add_parser('set-provider-health'); p.add_argument('provider_name'); p.add_argument('status'); p.add_argument('--latency-ms', type=int); p.add_argument('--error-rate', type=float); p.add_argument('--notes', default='')
-    p = sub.add_parser('list-providers'); p.add_argument('--provider-type')
-    p = sub.add_parser('list-runtime-receipts'); p.add_argument('--job-type'); p.add_argument('--provider-name'); p.add_argument('--limit', type=int, default=50)
-    p = sub.add_parser('provider-diagnostics'); p.add_argument('provider_name', nargs='?')
-    p = sub.add_parser('translation-readiness'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider')
-    p = sub.add_parser('translation-readiness-matrix'); p.add_argument('--target-language-id'); p.add_argument('--provider'); p.add_argument('--limit', type=int, default=25)
-    sub.add_parser('list-translation-backends')
-    p = sub.add_parser('translation-install-plan'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider', default='argos_local')
-    p = sub.add_parser('record-translation-install-plan'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider', default='argos_local'); p.add_argument('--note', action='append', default=[])
-    p = sub.add_parser('list-translation-install-plans'); p.add_argument('--provider'); p.add_argument('--source-language-id'); p.add_argument('--target-language-id'); p.add_argument('--limit', type=int, default=50)
+    p = sub.add_parser('list-language-capabilities', help='List language capability records.'); p.add_argument('--language-id')
+    p = sub.add_parser('language-readiness', help='Show full readiness summary for a language.'); p.add_argument('language_id')
+    p = sub.add_parser('runtime-translate', help='Route a translation request through the provider runtime.'); p.add_argument('text'); p.add_argument('target_language_id'); p.add_argument('--source-language-id'); p.add_argument('--preferred-translation-provider'); p.add_argument('--require-speech', action='store_true'); p.add_argument('--speech-provider'); p.add_argument('--voice-hint'); p.add_argument('--live', action='store_true')
+    p = sub.add_parser('runtime-speak', help='Route a speech synthesis request through the provider runtime.'); p.add_argument('text'); p.add_argument('language_id'); p.add_argument('--provider'); p.add_argument('--voice-hint'); p.add_argument('--live', action='store_true')
+    p = sub.add_parser('register-provider', help='Register a new provider in the provider registry.'); p.add_argument('provider_name'); p.add_argument('provider_type'); p.add_argument('--disabled', action='store_true'); p.add_argument('--local-only', action='store_true'); p.add_argument('--notes', default='')
+    p = sub.add_parser('set-provider-health', help='Record a health snapshot for a provider.'); p.add_argument('provider_name'); p.add_argument('status'); p.add_argument('--latency-ms', type=int); p.add_argument('--error-rate', type=float); p.add_argument('--notes', default='')
+    p = sub.add_parser('list-providers', help='List registered providers.'); p.add_argument('--provider-type')
+    p = sub.add_parser('list-runtime-receipts', help='List runtime job receipts.'); p.add_argument('--job-type'); p.add_argument('--provider-name'); p.add_argument('--limit', type=int, default=50)
+    p = sub.add_parser('provider-diagnostics', help='Show diagnostic information for providers.'); p.add_argument('provider_name', nargs='?')
+    p = sub.add_parser('translation-readiness', help='Check translation readiness for a source/target language pair.'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider')
+    p = sub.add_parser('translation-readiness-matrix', help='Show translation readiness across all known languages.'); p.add_argument('--target-language-id'); p.add_argument('--provider'); p.add_argument('--limit', type=int, default=25)
+    sub.add_parser('list-translation-backends', help='List built-in translation backend adapters.')
+    p = sub.add_parser('translation-install-plan', help='Generate a translation install plan for a language pair and provider.'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider', default='argos_local')
+    p = sub.add_parser('record-translation-install-plan', help='Record an install plan in the database.'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider', default='argos_local'); p.add_argument('--note', action='append', default=[])
+    p = sub.add_parser('list-translation-install-plans', help='List recorded translation install plans.'); p.add_argument('--provider'); p.add_argument('--source-language-id'); p.add_argument('--target-language-id'); p.add_argument('--limit', type=int, default=50)
 
-    sub.add_parser('system-status')
-    sub.add_parser('show-policy')
-    p = sub.add_parser('set-policy'); p.add_argument('policy_key'); p.add_argument('policy_value'); p.add_argument('--notes', default='')
-    p = sub.add_parser('export-evidence'); p.add_argument('output_path'); p.add_argument('--language-id', action='append', default=[]); p.add_argument('--no-receipts', action='store_true'); p.add_argument('--no-runtime', action='store_true'); p.add_argument('--no-graph', action='store_true')
-    p = sub.add_parser('provider-action-catalog'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider', required=True)
-    p = sub.add_parser('execute-provider-action'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider', required=True); p.add_argument('--action-name'); p.add_argument('--apply', action='store_true'); p.add_argument('--allow-mutation', action='store_true'); p.add_argument('--note', action='append', default=[])
-    p = sub.add_parser('list-provider-action-receipts'); p.add_argument('--provider'); p.add_argument('--action-name'); p.add_argument('--limit', type=int, default=50)
+    sub.add_parser('system-status', help='Show full system status: graph, providers, health, governance.')
+    sub.add_parser('show-policy', help='Show the current operator policy snapshot.')
+    p = sub.add_parser('set-policy', help='Set an operator policy key-value.'); p.add_argument('policy_key'); p.add_argument('policy_value'); p.add_argument('--notes', default='')
+    p = sub.add_parser('export-evidence', help='Export an operator evidence bundle to a JSON file.'); p.add_argument('output_path'); p.add_argument('--language-id', action='append', default=[]); p.add_argument('--no-receipts', action='store_true'); p.add_argument('--no-runtime', action='store_true'); p.add_argument('--no-graph', action='store_true')
+    p = sub.add_parser('provider-action-catalog', help='Show available provider actions for a language pair.'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider', required=True)
+    p = sub.add_parser('execute-provider-action', help='Execute a provider action (dry-run by default).'); p.add_argument('source_language_id'); p.add_argument('target_language_id'); p.add_argument('--provider', required=True); p.add_argument('--action-name'); p.add_argument('--apply', action='store_true'); p.add_argument('--allow-mutation', action='store_true'); p.add_argument('--note', action='append', default=[])
+    p = sub.add_parser('list-provider-action-receipts', help='List provider action execution receipts.'); p.add_argument('--provider'); p.add_argument('--action-name'); p.add_argument('--limit', type=int, default=50)
 
-    p = sub.add_parser('upsert-language-alias'); p.add_argument('language_id'); p.add_argument('alias'); p.add_argument('alias_type'); p.add_argument('--normalized-form'); p.add_argument('--script-id'); p.add_argument('--region-hint'); p.add_argument('--source-name', default='user_custom'); p.add_argument('--source-ref'); p.add_argument('--confidence', type=float, default=0.8); p.add_argument('--notes', default='')
-    p = sub.add_parser('list-language-aliases'); p.add_argument('--language-id'); p.add_argument('--query')
-    p = sub.add_parser('assert-relationship'); p.add_argument('src_lexeme_id'); p.add_argument('dst_lexeme_id'); p.add_argument('relation'); p.add_argument('--confidence', type=float, default=0.7); p.add_argument('--disputed', action='store_true'); p.add_argument('--source-name', default='user_custom'); p.add_argument('--source-ref'); p.add_argument('--notes', default='')
-    p = sub.add_parser('list-relationships'); p.add_argument('--lexeme-id'); p.add_argument('--relation')
-    p = sub.add_parser('batch-import'); p.add_argument('input_path'); p.add_argument('object_type'); p.add_argument('--apply', action='store_true')
-    p = sub.add_parser('batch-export'); p.add_argument('output_path'); p.add_argument('object_type'); p.add_argument('--language-id', action='append', default=[]); p.add_argument('--no-provenance', action='store_true')
-    p = sub.add_parser('list-batch-runs'); p.add_argument('--mode'); p.add_argument('--object-type')
-    p = sub.add_parser('set-source-weight'); p.add_argument('source_name'); p.add_argument('authority_weight', type=float); p.add_argument('--notes', default='')
-    sub.add_parser('list-source-weights')
-    p = sub.add_parser('upsert-semantic-concept'); p.add_argument('canonical_label'); p.add_argument('--concept-id'); p.add_argument('--domain', default='general'); p.add_argument('--description', default=''); p.add_argument('--source-name', default='user_custom'); p.add_argument('--source-ref'); p.add_argument('--confidence', type=float, default=0.8)
-    p = sub.add_parser('link-concept'); p.add_argument('concept_id'); p.add_argument('target_type'); p.add_argument('target_id'); p.add_argument('--relation', default='expresses'); p.add_argument('--confidence', type=float, default=0.8); p.add_argument('--notes', default='')
-    p = sub.add_parser('list-concepts'); p.add_argument('--domain'); p.add_argument('--query')
-    p = sub.add_parser('concept-bundle'); p.add_argument('concept_id')
-    p = sub.add_parser('upsert-language-variant'); p.add_argument('language_id'); p.add_argument('variant_name'); p.add_argument('variant_type'); p.add_argument('--region-hint'); p.add_argument('--script-id'); p.add_argument('--status', default='documented'); p.add_argument('--mutual-intelligibility', type=float); p.add_argument('--notes', default='')
-    p = sub.add_parser('list-language-variants'); p.add_argument('--language-id'); p.add_argument('--variant-type')
-    p = sub.add_parser('export-conflict-review'); p.add_argument('output_path'); p.add_argument('--language-id', action='append', default=[]); p.add_argument('--include-unreviewed-only', action='store_true')
-    p = sub.add_parser('list-conflict-exports'); p.add_argument('--limit', type=int, default=20)
-    p = sub.add_parser('coverage-report'); p.add_argument('--output-path'); p.add_argument('--language-id', action='append', default=[]); p.add_argument('--no-runtime', action='store_true'); p.add_argument('--no-graph', action='store_true')
-    p = sub.add_parser('list-coverage-reports'); p.add_argument('--limit', type=int, default=20)
+    p = sub.add_parser('upsert-language-alias', help='Add or update a language alias (endonym, exonym, romanized, etc.).'); p.add_argument('language_id'); p.add_argument('alias'); p.add_argument('alias_type'); p.add_argument('--normalized-form'); p.add_argument('--script-id'); p.add_argument('--region-hint'); p.add_argument('--source-name', default='user_custom'); p.add_argument('--source-ref'); p.add_argument('--confidence', type=float, default=0.8); p.add_argument('--notes', default='')
+    p = sub.add_parser('list-language-aliases', help='List language aliases.'); p.add_argument('--language-id'); p.add_argument('--query')
+    p = sub.add_parser('assert-relationship', help='Assert a cross-lexeme relationship (cognate, borrowing, false_friend, etc.).'); p.add_argument('src_lexeme_id'); p.add_argument('dst_lexeme_id'); p.add_argument('relation'); p.add_argument('--confidence', type=float, default=0.7); p.add_argument('--disputed', action='store_true'); p.add_argument('--source-name', default='user_custom'); p.add_argument('--source-ref'); p.add_argument('--notes', default='')
+    p = sub.add_parser('list-relationships', help='List relationship assertions, optionally filtered by lexeme or relation.'); p.add_argument('--lexeme-id'); p.add_argument('--relation')
+    p = sub.add_parser('batch-import', help='Batch import language submissions, aliases, lineage, or relationships.'); p.add_argument('input_path'); p.add_argument('object_type'); p.add_argument('--apply', action='store_true')
+    p = sub.add_parser('batch-export', help='Batch export languages, aliases, relationships, or a lineage bundle.'); p.add_argument('output_path'); p.add_argument('object_type'); p.add_argument('--language-id', action='append', default=[]); p.add_argument('--no-provenance', action='store_true')
+    p = sub.add_parser('list-batch-runs', help='List batch import/export run records.'); p.add_argument('--mode'); p.add_argument('--object-type')
+    p = sub.add_parser('set-source-weight', help='Set an authority weight for a source name.'); p.add_argument('source_name'); p.add_argument('authority_weight', type=float); p.add_argument('--notes', default='')
+    sub.add_parser('list-source-weights', help='List all source authority weights.')
+    p = sub.add_parser('upsert-semantic-concept', help='Create or update a semantic concept.'); p.add_argument('canonical_label'); p.add_argument('--concept-id'); p.add_argument('--domain', default='general'); p.add_argument('--description', default=''); p.add_argument('--source-name', default='user_custom'); p.add_argument('--source-ref'); p.add_argument('--confidence', type=float, default=0.8)
+    p = sub.add_parser('link-concept', help='Link a concept to a lexeme, phrase key, language, or alias.'); p.add_argument('concept_id'); p.add_argument('target_type'); p.add_argument('target_id'); p.add_argument('--relation', default='expresses'); p.add_argument('--confidence', type=float, default=0.8); p.add_argument('--notes', default='')
+    p = sub.add_parser('list-concepts', help='List semantic concepts, optionally filtered.'); p.add_argument('--domain'); p.add_argument('--query')
+    p = sub.add_parser('concept-bundle', help='Show a concept with all its links.'); p.add_argument('concept_id')
+    p = sub.add_parser('upsert-language-variant', help='Create or update a language variant (dialect, register, orthography, historical).'); p.add_argument('language_id'); p.add_argument('variant_name'); p.add_argument('variant_type'); p.add_argument('--region-hint'); p.add_argument('--script-id'); p.add_argument('--status', default='documented'); p.add_argument('--mutual-intelligibility', type=float); p.add_argument('--notes', default='')
+    p = sub.add_parser('list-language-variants', help='List language variants, optionally filtered by language or type.'); p.add_argument('--language-id'); p.add_argument('--variant-type')
+    p = sub.add_parser('export-conflict-review', help='Export an arbitration conflict review bundle.'); p.add_argument('output_path'); p.add_argument('--language-id', action='append', default=[]); p.add_argument('--include-unreviewed-only', action='store_true')
+    p = sub.add_parser('list-conflict-exports', help='List conflict review export records.'); p.add_argument('--limit', type=int, default=20)
+    p = sub.add_parser('coverage-report', help='Generate a per-language coverage report.'); p.add_argument('--output-path'); p.add_argument('--language-id', action='append', default=[]); p.add_argument('--no-runtime', action='store_true'); p.add_argument('--no-graph', action='store_true')
+    p = sub.add_parser('list-coverage-reports', help='List coverage report records.'); p.add_argument('--limit', type=int, default=20)
+
+    # Phonology
+    p = sub.add_parser('upsert-phonology-profile', help='Create or update a phonology profile for a language.'); p.add_argument('language_id'); p.add_argument('notation_system')
+    p.add_argument('--broad-ipa'); p.add_argument('--stress-policy'); p.add_argument('--syllable-template'); p.add_argument('--notes', default='')
+    p = sub.add_parser('list-phonology-profiles', help='List phonology profiles, optionally filtered by language.'); p.add_argument('--language-id')
+    p = sub.add_parser('phonology-hint', help='Get a phonology hint for text in a language.'); p.add_argument('text'); p.add_argument('language_id')
+
+    # Implementation matrix
+    p = sub.add_parser('build-implementation-matrix', help='Generate an implementation matrix report.'); p.add_argument('--output-path')
+    p = sub.add_parser('list-implementation-matrix-reports', help='List implementation matrix reports.'); p.add_argument('--limit', type=int, default=20)
+
+    # Acquisition workspace
+    p = sub.add_parser('plan-acquisition-job', help='Plan a corpus acquisition job for a named corpus manifest.'); p.add_argument('corpus_name'); p.add_argument('--stage-name', default='staging'); p.add_argument('--output-dir'); p.add_argument('--notes', default='')
+    p = sub.add_parser('record-staged-asset', help='Record a staged asset file for an acquisition job.'); p.add_argument('job_id'); p.add_argument('file_path'); p.add_argument('--asset-kind', default='unknown'); p.add_argument('--notes', default='')
+    p = sub.add_parser('validate-staged-asset', help='Validate a staged asset file (kind check, hash).'); p.add_argument('file_path'); p.add_argument('expected_kind'); p.add_argument('--expected-source-name'); p.add_argument('--notes', default='')
+    p = sub.add_parser('list-acquisition-jobs', help='List acquisition jobs, optionally filtered by corpus.'); p.add_argument('--corpus-name')
+    p = sub.add_parser('list-validation-reports', help='List staged asset validation reports.'); p.add_argument('--limit', type=int, default=50)
+    p = sub.add_parser('export-ingestion-workspace', help='Export the full ingestion workspace bundle to a JSON file.')
+    p.add_argument('output_path'); p.add_argument('--no-corpus-manifests', action='store_true')
+    p.add_argument('--no-import-runs', action='store_true'); p.add_argument('--no-batch-runs', action='store_true')
+    p.add_argument('--no-validation-reports', action='store_true'); p.add_argument('--no-jobs', action='store_true')
 
     args = parser.parse_args()
     if args.cmd == 'init-db': init_db(); _dump({'ok': True}); return
@@ -148,9 +171,9 @@ def main() -> None:
     if args.cmd == 'list-pronunciation-profiles': _dump(list_pronunciation_profiles(language_id=args.language_id)); return
     if args.cmd == 'list-transliteration-profiles': _dump(list_transliteration_profiles(language_id=args.language_id)); return
     if args.cmd == 'upsert-transliteration-profile': _dump(upsert_transliteration_profile(args.language_id, args.source_script, args.target_script, args.scheme_name, args.coverage, example_in=args.example_in, example_out=args.example_out, notes=args.notes)); return
-    if args.cmd == 'import-glottolog-fixture': _dump(import_glottolog_csv(args.path)); return
-    if args.cmd == 'import-iso-fixture': _dump(import_iso639_csv(args.path)); return
-    if args.cmd == 'import-cldr-fixture': _dump(import_cldr_json(args.path)); return
+    if args.cmd == 'import-glottolog-fixture': _dump(import_glottolog_csv(args.path, dry_run=args.dry_run)); return
+    if args.cmd == 'import-iso-fixture': _dump(import_iso639_csv(args.path, dry_run=args.dry_run)); return
+    if args.cmd == 'import-cldr-fixture': _dump(import_cldr_json(args.path, dry_run=args.dry_run)); return
     if args.cmd == 'add-custom-lineage':
         _dump(add_custom_lineage(ManualLineageRequest(src_id=args.src_id, dst_id=args.dst_id, relation=args.relation, confidence=args.confidence, disputed=args.disputed, source_name=args.source_name, source_ref=args.source_ref, notes=args.notes, status=args.status)));
         return
@@ -212,8 +235,22 @@ def main() -> None:
     if args.cmd == 'list-language-variants': _dump(list_language_variants(language_id=args.language_id, variant_type=args.variant_type)); return
     if args.cmd == 'export-conflict-review': _dump(export_conflict_review_bundle(ConflictReviewExportRequest(output_path=args.output_path, language_ids=args.language_id, include_unreviewed_only=args.include_unreviewed_only))); return
     if args.cmd == 'list-conflict-exports': _dump(list_conflict_review_exports(limit=args.limit)); return
-    if args.cmd == 'coverage-report': _dump(build_coverage_report(CoverageReportRequest, AcquisitionJobRequest, StagedAssetRequest, ValidationReportRequest, IngestionWorkspaceExportRequest(output_path=args.output_path, language_ids=args.language_id, include_runtime=not args.no_runtime, include_graph=not args.no_graph))); return
+    if args.cmd == 'coverage-report': _dump(build_coverage_report(CoverageReportRequest(output_path=args.output_path, language_ids=args.language_id, include_runtime=not args.no_runtime, include_graph=not args.no_graph))); return
     if args.cmd == 'list-coverage-reports': _dump(list_coverage_reports(limit=args.limit)); return
+
+    if args.cmd == 'upsert-phonology-profile': _dump(upsert_phonology_profile(args.language_id, args.notation_system, broad_ipa=args.broad_ipa, stress_policy=args.stress_policy, syllable_template=args.syllable_template, notes=args.notes)); return
+    if args.cmd == 'list-phonology-profiles': _dump(list_phonology_profiles(language_id=args.language_id)); return
+    if args.cmd == 'phonology-hint': _dump(phonology_hint(args.text, args.language_id)); return
+
+    if args.cmd == 'build-implementation-matrix': _dump(build_implementation_matrix(output_path=args.output_path)); return
+    if args.cmd == 'list-implementation-matrix-reports': _dump(list_implementation_matrix_reports(limit=args.limit)); return
+
+    if args.cmd == 'plan-acquisition-job': _dump(plan_acquisition_job(AcquisitionJobRequest(corpus_name=args.corpus_name, stage_name=args.stage_name, output_dir=args.output_dir, notes=args.notes))); return
+    if args.cmd == 'record-staged-asset': _dump(record_staged_asset(StagedAssetRequest(job_id=args.job_id, file_path=args.file_path, asset_kind=args.asset_kind, notes=args.notes))); return
+    if args.cmd == 'validate-staged-asset': _dump(validate_staged_asset(ValidationReportRequest(file_path=args.file_path, expected_kind=args.expected_kind, expected_source_name=args.expected_source_name, notes=args.notes))); return
+    if args.cmd == 'list-acquisition-jobs': _dump(list_acquisition_jobs(corpus_name=args.corpus_name)); return
+    if args.cmd == 'list-validation-reports': _dump(list_validation_reports(limit=args.limit)); return
+    if args.cmd == 'export-ingestion-workspace': _dump(export_ingestion_workspace(IngestionWorkspaceExportRequest(output_path=args.output_path, include_corpus_manifests=not args.no_corpus_manifests, include_import_runs=not args.no_import_runs, include_batch_runs=not args.no_batch_runs, include_validation_reports=not args.no_validation_reports, include_jobs=not args.no_jobs))); return
 
 
 if __name__ == '__main__':

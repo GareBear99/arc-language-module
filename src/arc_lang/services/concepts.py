@@ -6,6 +6,7 @@ from arc_lang.core.models import SemanticConceptUpsertRequest, ConceptLinkReques
 
 
 def upsert_semantic_concept(req: SemanticConceptUpsertRequest) -> dict:
+    """Create or update a semantic concept with label, domain, description, and confidence."""
     now = utcnow()
     concept_id = req.concept_id or f"concept_{req.domain}_{req.canonical_label.casefold().replace(' ','_')}"
     with connect() as conn:
@@ -22,6 +23,7 @@ def upsert_semantic_concept(req: SemanticConceptUpsertRequest) -> dict:
 
 
 def link_concept(req: ConceptLinkRequest) -> dict:
+    """Link a concept to a target (lexeme, language, phrase_key, or alias)."""
     now = utcnow()
     link_id = f"clink_{uuid.uuid4().hex[:12]}"
     with connect() as conn:
@@ -51,6 +53,7 @@ def link_concept(req: ConceptLinkRequest) -> dict:
 
 
 def list_semantic_concepts(domain: str | None = None, q: str | None = None) -> dict:
+    """List semantic concepts, optionally filtered by domain or query string."""
     query = "SELECT * FROM semantic_concepts"
     params = []
     clauses = []
@@ -70,6 +73,7 @@ def list_semantic_concepts(domain: str | None = None, q: str | None = None) -> d
 
 
 def get_concept_bundle(concept_id: str) -> dict:
+    """Return a concept with all its concept_links in a single bundle."""
     with connect() as conn:
         concept = conn.execute("SELECT * FROM semantic_concepts WHERE concept_id=?", (concept_id,)).fetchone()
         if not concept:

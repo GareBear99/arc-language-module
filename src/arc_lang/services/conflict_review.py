@@ -8,6 +8,7 @@ from arc_lang.services.arbitration import resolve_effective_lineage
 
 
 def export_conflict_review_bundle(req: ConflictReviewExportRequest) -> dict:
+    """Export an arbitration conflict review bundle for specified languages to a JSON file."""
     with connect() as conn:
         if req.language_ids:
             langs = req.language_ids
@@ -34,6 +35,7 @@ def export_conflict_review_bundle(req: ConflictReviewExportRequest) -> dict:
 
 
 def list_conflict_review_exports(limit: int = 20) -> dict:
+    """List conflict review export records, most recent first."""
     with connect() as conn:
         items = [dict(r) for r in conn.execute("SELECT * FROM conflict_review_exports ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()]
     return {'ok': True, 'count': len(items), 'items': items}

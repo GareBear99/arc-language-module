@@ -11,6 +11,7 @@ WORD_RE = re.compile(r"\w+", re.UNICODE)
 
 
 def analyze_text(req: AnalysisRequest) -> dict:
+    """Full linguistic analysis: script, tokens, lexeme lookup, transliteration, and pronunciation hints."""
     detection = None
     language_id = req.language_id
     if not language_id and req.allow_detect:

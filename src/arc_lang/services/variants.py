@@ -5,6 +5,7 @@ from arc_lang.core.models import LanguageVariantUpsertRequest, utcnow
 
 
 def upsert_language_variant(req: LanguageVariantUpsertRequest) -> dict:
+    """Create or update a language variant (dialect, register, orthography, or historical stage)."""
     now = utcnow()
     variant_id = f"variant_{req.language_id.replace(':','_')}_{req.variant_type}_{req.variant_name.casefold().replace(' ','_')}"
     with connect() as conn:
@@ -24,6 +25,7 @@ def upsert_language_variant(req: LanguageVariantUpsertRequest) -> dict:
 
 
 def list_language_variants(language_id: str | None = None, variant_type: str | None = None) -> dict:
+    """List language variants, optionally filtered by language_id and variant_type."""
     query = "SELECT * FROM language_variants"
     params = []
     clauses = []

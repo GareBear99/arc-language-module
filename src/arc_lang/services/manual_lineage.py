@@ -9,6 +9,7 @@ ALLOWED_CUSTOM_STATUSES = {
 
 
 def add_custom_lineage(req: ManualLineageRequest) -> dict:
+    """Add a custom lineage assertion between two nodes."""
     now = utcnow()
     assertion_id = f"cla_{uuid.uuid4().hex[:12]}"
     status = req.status if req.status in ALLOWED_CUSTOM_STATUSES else 'user_asserted'
@@ -27,6 +28,7 @@ def add_custom_lineage(req: ManualLineageRequest) -> dict:
 
 
 def update_custom_lineage_status(assertion_id: str, status: str) -> dict:
+    """Update the status of a custom lineage assertion (e.g., needs_review → accepted_local)."""
     if status not in ALLOWED_CUSTOM_STATUSES:
         return {"ok": False, "error": "invalid_status", "allowed_statuses": sorted(ALLOWED_CUSTOM_STATUSES)}
     now = utcnow()
@@ -40,6 +42,7 @@ def update_custom_lineage_status(assertion_id: str, status: str) -> dict:
 
 
 def list_custom_lineage(src_id: str | None = None, dst_id: str | None = None, status: str | None = None) -> dict:
+    """List custom lineage assertions, optionally filtered by src_id, dst_id, or status."""
     clauses=[]
     params=[]
     if src_id:

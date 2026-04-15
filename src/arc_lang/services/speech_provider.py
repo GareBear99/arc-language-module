@@ -8,6 +8,7 @@ class SpeechProvider(ABC):
 
     @abstractmethod
     def speak(self, req: SpeechRequest) -> dict:
+        """Execute a speech synthesis request for the given text and language."""
         raise NotImplementedError
 
 
@@ -15,6 +16,7 @@ class DisabledSpeechProvider(SpeechProvider):
     name = "disabled"
 
     def speak(self, req: SpeechRequest) -> dict:
+        """Execute a speech synthesis request for the given text and language."""
         return {
             "ok": False,
             "provider": self.name,
@@ -28,6 +30,7 @@ class PersonaPlexAdapter(SpeechProvider):
     name = "personaplex"
 
     def speak(self, req: SpeechRequest) -> dict:
+        """Execute a speech synthesis request for the given text and language."""
         return {
             "ok": True,
             "provider": self.name,
@@ -43,6 +46,7 @@ class PersonaPlexAdapter(SpeechProvider):
 
 
 def get_provider(name: str | None) -> SpeechProvider:
+    """Return a SpeechProvider instance by provider name (disabled, personaplex, or default)."""
     if not name or name == "disabled":
         return DisabledSpeechProvider()
     if name == "personaplex":

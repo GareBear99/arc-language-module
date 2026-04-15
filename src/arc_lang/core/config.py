@@ -22,5 +22,7 @@ TRANSLITERATION_SEED_PATH = CONFIG_DIR / 'transliteration_seed.json'
 PHONOLOGY_SEED_PATH = CONFIG_DIR / 'phonology_seed.json'
 BACKEND_MANIFEST_PATH = CONFIG_DIR / 'backend_manifests.json'
 CORPUS_MANIFEST_PATH = CONFIG_DIR / 'corpus_manifests.json'
+VARIANTS_SEED_PATH = CONFIG_DIR / 'variants_seed.json'
+CONCEPTS_SEED_PATH = CONFIG_DIR / 'concepts_seed.json'
 INGESTION_WORKSPACE_DIR = ROOT / 'workspace'
 INGESTION_WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)

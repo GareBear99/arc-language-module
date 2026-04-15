@@ -15,6 +15,7 @@ TRUTHY = {"1", "true", "yes", "on"}
 
 
 def _ensure_defaults() -> None:
+    """Ensure default operator policies are present in the database (idempotent)."""
     with connect() as conn:
         for key, value in DEFAULT_POLICIES.items():
             conn.execute(
@@ -28,6 +29,7 @@ def _ensure_defaults() -> None:
 
 
 def get_policy_snapshot() -> dict:
+    """Return the current operator policy snapshot including all keys, string values, and boolean flags."""
     _ensure_defaults()
     with connect() as conn:
         rows = [dict(r) for r in conn.execute("SELECT * FROM operator_policies ORDER BY policy_key").fetchall()]
@@ -37,6 +39,7 @@ def get_policy_snapshot() -> dict:
 
 
 def get_policy_flag(policy_key: str, default: bool = False) -> bool:
+    """Return a single operator policy flag as a boolean, with a default if not set."""
     snap = get_policy_snapshot()
     if policy_key not in snap["policy_values"]:
         return default
@@ -44,6 +47,7 @@ def get_policy_flag(policy_key: str, default: bool = False) -> bool:
 
 
 def set_operator_policy(policy_key: str, policy_value: str, notes: str = "") -> dict:
+    """Set an operator policy key-value pair."""
     _ensure_defaults()
     with connect() as conn:
         conn.execute(

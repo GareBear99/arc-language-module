@@ -1,0 +1,2 @@
+[console_scripts]
+arc-lang = arc_lang.cli.main:main

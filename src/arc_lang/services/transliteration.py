@@ -51,6 +51,7 @@ def _profile_lookup(language_id: str | None, source_script: str, target_script: 
     return dict(row) if row else None
 
 def list_transliteration_profiles(language_id: str | None = None) -> dict:
+    """List transliteration profiles, optionally filtered by language_id."""
     query = "SELECT profile_id, language_id, source_script, target_script, scheme_name, coverage, example_in, example_out, notes, created_at, updated_at FROM transliteration_profiles"
     params = []
     if language_id:
@@ -62,6 +63,7 @@ def list_transliteration_profiles(language_id: str | None = None) -> dict:
     return {"ok": True, "results": rows}
 
 def upsert_transliteration_profile(language_id: str, source_script: str, target_script: str, scheme_name: str, coverage: str, example_in: str | None = None, example_out: str | None = None, notes: str = "") -> dict:
+    """Create or update a transliteration profile for a language+script pair."""
     profile_id = f"trprof_{uuid.uuid5(uuid.NAMESPACE_URL, language_id + ':' + source_script + ':' + target_script + ':' + scheme_name).hex[:18]}"
     now = utcnow()
     with connect() as conn:
@@ -77,6 +79,7 @@ def upsert_transliteration_profile(language_id: str, source_script: str, target_
     return {"ok": True, "profile_id": profile_id, "language_id": language_id}
 
 def transliterate(text: str, source_script: str, target_script: str = "Latn", language_id: str | None = None) -> dict:
+    """Transliterate text from a source script to a target script using seeded mapping tables."""
     mapping = BASIC_MAPS.get((source_script, target_script))
     profile = _profile_lookup(language_id, source_script, target_script)
     if not mapping:
@@ -99,6 +102,7 @@ def transliterate(text: str, source_script: str, target_script: str = "Latn", la
     }
 
 def transliterate_request(req: TransliterationRequest) -> dict:
+    """Transliterate using a full TransliterationRequest model (with language detection support)."""
     detection = None
     language_id = req.language_id
     if not language_id and req.allow_detect:

@@ -51,6 +51,7 @@ def _record_action_receipt(provider_name: str, action_name: str, request_payload
 
 
 def list_provider_action_receipts(provider_name: str | None = None, action_name: str | None = None, limit: int = 50) -> dict:
+    """List provider action receipts, optionally filtered by provider_name and action_name."""
     q = "SELECT * FROM provider_action_receipts WHERE 1=1"
     params: list[Any] = []
     if provider_name:
@@ -158,6 +159,7 @@ def _bridge_action_catalog(provider_name: str) -> list[dict[str, Any]]:
 
 
 def build_provider_action_catalog(source_language_id: str, target_language_id: str, provider_name: str) -> dict:
+    """Build the available action catalog for a provider and language pair."""
     if provider_name == "argos_local":
         actions = _argos_action_catalog(source_language_id, target_language_id)
     elif provider_name in {"argos_bridge", "nllb_bridge"}:
@@ -184,6 +186,7 @@ def _execute_shell_command(command: list[str]) -> dict:
 
 
 def execute_provider_action(req: BackendActionRequest) -> dict:
+    """Execute a provider action (dry-run by default, mutation requires allow_mutation=True)."""
     health = provider_is_usable(req.provider_name)
     catalog = build_provider_action_catalog(req.source_language_id, req.target_language_id, req.provider_name)
     actions = {a["action_name"]: a for a in catalog["actions"]}

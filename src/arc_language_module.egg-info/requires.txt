@@ -1,0 +1,11 @@
+pydantic>=2.6
+fastapi>=0.110
+
+[argos]
+argostranslate>=1.9
+
+[dev]
+pytest>=8.0
+
+[server]
+uvicorn>=0.28

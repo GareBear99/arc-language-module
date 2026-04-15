@@ -38,8 +38,8 @@ def test_custom_lineage_is_separate_and_visible():
     assert any(r['relation'] == 'custom_member_of_family' for r in lineage['custom_assertions'])
 
 
-def test_export_and_import_template_json():
-    out = ROOT / 'examples' / 'tmp_submission.json'
+def test_export_and_import_template_json(tmp_path):
+    out = tmp_path / 'tmp_submission.json'
     export = export_language_submission_template(out)
     assert export['ok'] is True
     imported = import_language_submission_json(ROOT / 'examples' / 'language_submission_example.json')

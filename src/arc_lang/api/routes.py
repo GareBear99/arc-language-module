@@ -6,6 +6,8 @@ from arc_lang.core.models import (
     AnalysisRequest, TransliterationRequest, TransliterationProfileUpsertRequest, SemanticConceptUpsertRequest, ConceptLinkRequest, LanguageVariantUpsertRequest, ConflictReviewExportRequest, CoverageReportRequest,
     TranslationExplainRequest, SpeechRequest, TranslateExplainQuery, ImportRequest,
     ManualLineageRequest, LanguageSubmissionRequest, ReviewDecisionRequest, CapabilityUpdateRequest, RuntimeTranslateRequest, RuntimeSpeechRequest, ProviderRegistrationRequest, ProviderHealthRequest, TranslationInstallPlanRequest, PolicyUpdateRequest, EvidenceExportRequest, AliasUpsertRequest, RelationshipAssertionRequest, BatchImportRequest, BatchExportRequest, SourceWeightUpdateRequest, BackendActionRequest,
+    AcquisitionJobRequest, StagedAssetRequest, ValidationReportRequest, IngestionWorkspaceExportRequest,
+    PhonologyProfileUpsertRequest,
 )
 from arc_lang.services.seed_ingest import ingest_common_seed
 from arc_lang.services.detection import detect_language
@@ -85,18 +87,18 @@ def speak(provider_name: str, req: SpeechRequest) -> dict:
 
 
 @router.post('/import/glottolog')
-def import_glottolog(req: ImportRequest) -> dict:
-    return import_glottolog_csv(req.path)
+def import_glottolog(req: ImportRequest, dry_run: bool = False) -> dict:
+    return import_glottolog_csv(req.path, dry_run=dry_run)
 
 
 @router.post('/import/iso639_3')
-def import_iso(req: ImportRequest) -> dict:
-    return import_iso639_csv(req.path)
+def import_iso(req: ImportRequest, dry_run: bool = False) -> dict:
+    return import_iso639_csv(req.path, dry_run=dry_run)
 
 
 @router.post('/import/cldr')
-def import_cldr(req: ImportRequest) -> dict:
-    return import_cldr_json(req.path)
+def import_cldr(req: ImportRequest, dry_run: bool = False) -> dict:
+    return import_cldr_json(req.path, dry_run=dry_run)
 
 
 @router.get('/search/languages')
@@ -466,8 +468,15 @@ def phonology_profiles_route(language_id: str | None = None) -> dict:
 
 
 @router.post('/phonology/profiles/upsert')
-def phonology_upsert_route(language_id: str, notation_system: str, broad_ipa: str | None = None, stress_policy: str | None = None, syllable_template: str | None = None, notes: str = '') -> dict:
-    return upsert_phonology_profile(language_id, notation_system, broad_ipa=broad_ipa, stress_policy=stress_policy, syllable_template=syllable_template, notes=notes)
+def phonology_upsert_route(req: PhonologyProfileUpsertRequest) -> dict:
+    return upsert_phonology_profile(
+        req.language_id, req.notation_system,
+        broad_ipa=req.broad_ipa,
+        stress_policy=req.stress_policy,
+        syllable_template=req.syllable_template,
+        examples=req.examples or None,
+        notes=req.notes,
+    )
 
 
 @router.get('/phonology/hint')

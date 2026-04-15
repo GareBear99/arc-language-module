@@ -3,13 +3,15 @@ import json
 import uuid
 from pathlib import Path
 from arc_lang.core.db import connect
-from arc_lang.core.config import SEED_PATH, PHRASE_PATH, ETYMOLOGY_SEED_PATH, TRANSLITERATION_SEED_PATH, PHONOLOGY_SEED_PATH
+from arc_lang.core.config import SEED_PATH, PHRASE_PATH, ETYMOLOGY_SEED_PATH, TRANSLITERATION_SEED_PATH, PHONOLOGY_SEED_PATH, VARIANTS_SEED_PATH, CONCEPTS_SEED_PATH
+from arc_lang.services.policy import _ensure_defaults as _seed_default_policies
 from arc_lang.core.models import ScriptRecord, LanguageRecord, utcnow
 from arc_lang.services.source_policy import seed_source_weights
 from arc_lang.services.manifests import seed_manifests
 
 
 def _upsert_provenance(conn, record_type: str, record_id: str, source_name: str, source_ref: str | None, confidence: float, notes: str, now: str) -> None:
+    """Upsert a provenance record for a seeded entity."""
     prov_id = f"prov_{record_type}_{record_id}_{source_name}".replace(":", "_").replace(" ", "_")
     conn.execute(
         """
@@ -22,10 +24,12 @@ def _upsert_provenance(conn, record_type: str, record_id: str, source_name: str,
 
 
 def _slug(text: str) -> str:
+    """Convert text to a URL-safe lowercase slug for node IDs."""
     return ''.join(ch.lower() if ch.isalnum() else '_' for ch in text).strip('_')
 
 
 def _ensure_lineage_node(conn, node_type: str, name: str, parent_node_id: str | None, now: str) -> str:
+    """Ensure a lineage node (family/branch) exists in the DB, creating it if absent."""
     node_id = f"{node_type}:{_slug(name)}"
     conn.execute(
         """
@@ -39,6 +43,7 @@ def _ensure_lineage_node(conn, node_type: str, name: str, parent_node_id: str | 
 
 
 def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | Path | None = None, etymology_path: str | Path | None = None) -> dict:
+    """Seed all common data: scripts, languages, phrases, lexemes, profiles, variants, concepts, and relationships."""
     seed_path = Path(seed_path or SEED_PATH)
     phrase_path = Path(phrase_path or PHRASE_PATH)
     etymology_path = Path(etymology_path or ETYMOLOGY_SEED_PATH)
@@ -48,9 +53,12 @@ def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | P
     pron_payload = json.loads((Path(__file__).resolve().parents[3] / 'config' / 'pronunciation_seed.json').read_text(encoding='utf-8'))
     phon_payload = json.loads(Path(PHONOLOGY_SEED_PATH).read_text(encoding='utf-8'))
     translit_payload = json.loads(Path(TRANSLITERATION_SEED_PATH).read_text(encoding='utf-8'))
+    variants_payload = json.loads(Path(VARIANTS_SEED_PATH).read_text(encoding='utf-8'))
+    concepts_payload = json.loads(Path(CONCEPTS_SEED_PATH).read_text(encoding='utf-8'))
     now = utcnow()
     seed_source_weights()
     seed_manifests()
+    _seed_default_policies()  # Ensure operator_policies defaults are always present
     script_count = 0
     language_count = 0
     phrase_count = 0
@@ -59,6 +67,9 @@ def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | P
     pronunciation_count = 0
     transliteration_profile_count = 0
     phonology_count = 0
+    variant_count = 0
+    concept_count = 0
+    concept_link_count = 0
     with connect() as conn:
 
         seed_providers = [
@@ -81,6 +92,30 @@ def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | P
                 ON CONFLICT(provider_name) DO UPDATE SET provider_type=excluded.provider_type, enabled=excluded.enabled, local_only=excluded.local_only, notes=excluded.notes, updated_at=excluded.updated_at
                 """,
                 (provider_name, provider_type, enabled, local_only, notes, now, now),
+            )
+
+        # Seed initial provider health snapshots for local providers
+        local_provider_health = [
+            ("local_seed",   "healthy", 0,    0.0, "Seeded phrase translation backend — always available."),
+            ("local_detect", "healthy", 0,    0.0, "Script and lexical detection backend — always available."),
+            ("local_graph",  "healthy", 0,    0.0, "Lineage graph provider — always available."),
+            ("local_map",    "healthy", 0,    0.0, "Transliteration profile mapping — always available."),
+            ("mirror_mock",  "healthy", 1,    0.0, "Same-language mirror backend — always available."),
+            ("argos_local",  "degraded", None, None, "Optional — healthy only if argostranslate is installed and models are downloaded."),
+            ("argos_bridge", "offline",  None, None, "Bridge stub — offline until a live adapter is configured."),
+            ("nllb_bridge",  "offline",  None, None, "Bridge stub — offline until a live adapter is configured."),
+            ("disabled",     "healthy",  0,    0.0, "Disabled speech provider — always responds (with disabled status)."),
+            ("personaplex",  "offline",  None, None, "Boundary stub — offline until NVIDIA runtime is configured."),
+        ]
+        for pname, status, latency_ms, error_rate, health_notes in local_provider_health:
+            health_id = f"health_seed_{pname}"
+            conn.execute(
+                """
+                INSERT INTO provider_health (health_id, provider_name, status, latency_ms, error_rate, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(health_id) DO UPDATE SET status=excluded.status, latency_ms=excluded.latency_ms, error_rate=excluded.error_rate, notes=excluded.notes
+                """,
+                (health_id, pname, status, latency_ms, error_rate, health_notes, now),
             )
         for script in payload.get("scripts", []):
             rec = ScriptRecord(**script)
@@ -222,14 +257,17 @@ def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | P
 
         for phrase in phrase_payload.get("phrases", []):
             canonical_key = phrase["canonical_key"]
+            group_register = phrase.get("register", "general")  # group-level register
             for variant in phrase.get("variants", []):
                 phrase_id = f"phr_{uuid.uuid5(uuid.NAMESPACE_URL, canonical_key + variant['language_id']).hex[:18]}"
+                # Variant-level register overrides group-level if present
+                register = variant.get("register", group_register)
                 conn.execute(
                     """
                     INSERT OR REPLACE INTO phrase_translations (phrase_id, canonical_key, language_id, text_value, register, created_at)
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
-                    (phrase_id, canonical_key, variant["language_id"], variant["text"], variant.get("register", "general"), now),
+                    (phrase_id, canonical_key, variant["language_id"], variant["text"], register, now),
                 )
                 _upsert_provenance(conn, "phrase_translation", phrase_id, "common_phrase_seed", f"config/common_phrases_seed.json#{canonical_key}", 0.82, "Seeded common phrase translation", now)
                 phrase_count += 1
@@ -296,5 +334,117 @@ def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | P
             )
             _upsert_provenance(conn, 'etymology_edge', etymology_id, 'common_etymology_seed', edge.get('source_ref'), edge.get('confidence', 0.7), 'Seeded etymology edge.', now)
             etymology_count += 1
+
+        for variant in variants_payload.get('variants', []):
+            lang_id = variant['language_id']
+            vname = variant['variant_name']
+            vtype = variant['variant_type']
+            variant_id = f"variant_{lang_id.replace(':','_')}_{vtype}_{vname.casefold().replace(' ','_')}"
+            existing_lang = conn.execute("SELECT 1 FROM languages WHERE language_id=?", (lang_id,)).fetchone()
+            if not existing_lang:
+                continue
+            conn.execute(
+                """
+                INSERT INTO language_variants (variant_id, language_id, variant_name, variant_type, region_hint, script_id, status, mutual_intelligibility, notes, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(variant_id) DO UPDATE SET region_hint=excluded.region_hint, script_id=excluded.script_id, status=excluded.status, mutual_intelligibility=excluded.mutual_intelligibility, notes=excluded.notes, updated_at=excluded.updated_at
+                """,
+                (variant_id, lang_id, vname, vtype, variant.get('region_hint'), variant.get('script_id'),
+                 variant.get('status', 'documented'), variant.get('mutual_intelligibility'), variant.get('notes', ''), now, now),
+            )
+            _upsert_provenance(conn, 'language_variant', variant_id, 'common_seed', f"config/variants_seed.json#{variant_id}", 0.75, 'Seeded language variant.', now)
+            variant_count += 1
+
+        for concept in concepts_payload.get('concepts', []):
+            cid = concept['concept_id']
+            conn.execute(
+                """
+                INSERT INTO semantic_concepts (concept_id, canonical_label, domain, description, source_name, source_ref, confidence, created_at, updated_at)
+                VALUES (?, ?, ?, ?, 'common_seed', NULL, ?, ?, ?)
+                ON CONFLICT(concept_id) DO UPDATE SET canonical_label=excluded.canonical_label, domain=excluded.domain, description=excluded.description, confidence=excluded.confidence, updated_at=excluded.updated_at
+                """,
+                (cid, concept['canonical_label'], concept.get('domain', 'general'), concept.get('description', ''), concept.get('confidence', 0.85), now, now),
+            )
+            _upsert_provenance(conn, 'semantic_concept', cid, 'common_seed', f"config/concepts_seed.json#{cid}", concept.get('confidence', 0.85), 'Seeded universal semantic concept.', now)
+            concept_count += 1
+
+        for link in concepts_payload.get('phrase_links', []):
+            cid = link['concept_id']
+            concept_exists = conn.execute("SELECT 1 FROM semantic_concepts WHERE concept_id=?", (cid,)).fetchone()
+            if not concept_exists:
+                continue
+            for key in link.get('canonical_keys', []):
+                phrase_exists = conn.execute("SELECT 1 FROM phrase_translations WHERE canonical_key=? LIMIT 1", (key,)).fetchone()
+                if phrase_exists:
+                    link_id = f"clink_seed_{cid}_{key}".replace(':', '_').replace('.', '_')
+                    conn.execute(
+                        """
+                        INSERT INTO concept_links (link_id, concept_id, target_type, target_id, relation, confidence, notes, created_at, updated_at)
+                        VALUES (?, ?, 'phrase_key', ?, 'expresses', 0.85, 'Seeded phrase-to-concept link.', ?, ?)
+                        ON CONFLICT(link_id) DO NOTHING
+                        """,
+                        (link_id, cid, key, now, now),
+                    )
+                    concept_link_count += 1
+
+        for lang_link in concepts_payload.get('language_links', []):
+            cid = lang_link['concept_id']
+            concept_exists = conn.execute("SELECT 1 FROM semantic_concepts WHERE concept_id=?", (cid,)).fetchone()
+            if not concept_exists:
+                continue
+            for lang_id in lang_link.get('language_ids', []):
+                lang_exists = conn.execute("SELECT 1 FROM languages WHERE language_id=?", (lang_id,)).fetchone()
+                if lang_exists:
+                    link_id = f"clink_seed_{cid}_{lang_id}".replace(':', '_').replace('.', '_')
+                    conn.execute(
+                        """
+                        INSERT INTO concept_links (link_id, concept_id, target_type, target_id, relation, confidence, notes, created_at, updated_at)
+                        VALUES (?, ?, 'language', ?, 'expressed_by', 0.80, 'Seeded language-to-concept link.', ?, ?)
+                        ON CONFLICT(link_id) DO NOTHING
+                        """,
+                        (link_id, cid, lang_id, now, now),
+                    )
+                    concept_link_count += 1
+
+        # Seed cross-lexeme relationship assertions (cognate / borrowing / false_friend)
+        # These are seed-time operator assertions — not external corpus claims.
+        relationship_count = 0
+        seeded_relationships = [
+            # Slavic negation cognates
+            ("lex:rus:нет",    "lex:ukr:ні",      "cognate",      0.92, "Proto-Slavic *ne- cognates"),
+            ("lex:rus:нет",    "lex:pol:nie",      "cognate",      0.88, "Proto-Slavic *ne- cognates"),
+            ("lex:ukr:ні",     "lex:pol:nie",      "cognate",      0.88, "Proto-Slavic *ne- cognates"),
+            # Romance gratitude cognates (Latin gratia)
+            ("lex:spa:gracias", "lex:ita:grazie",  "cognate",      0.95, "Latin gratia > Romance cognates"),
+            ("lex:spa:gracias", "lex:fra:merci",   "false_friend", 0.20, "Different etymologies: gracias < gratia, merci < mercedem"),
+            # Greeting borrowings
+            ("lex:por:tchau",  "lex:ita:ciao",     "borrowing",    0.95, "Portuguese borrowed Italian ciao"),
+            # Mandarin/Cantonese shared characters
+            ("lex:yue:你好",   "lex:cmn:你好",     "cognate",      0.99, "Same Sinitic characters; different spoken forms"),
+            ("lex:yue:再见",   "lex:cmn:再见",     "cognate",      0.99, "Same Sinitic characters; Cantonese reading differs"),
+            # Arabic/Urdu/Persian shared greeting roots
+            ("lex:arb:مرحبا", "lex:fas:سلام",     "false_friend", 0.20, "Different roots: marhaba (Ar) vs salaam (Persian/Arabic)"),
+            ("lex:arb:شكرا",  "lex:urd:شکریہ",   "borrowing",    0.90, "Urdu shukria borrowed from Arabic shukran"),
+            # Salam/Shalom cognates (Semitic)
+            ("lex:arb:مرحبا", "lex:heb:שלום",    "false_friend", 0.15, "Different Semitic roots; shalom = peace, marhaba = welcome"),
+        ]
+
+        for src_id, dst_id, relation, confidence, notes_text in seeded_relationships:
+            src_exists = conn.execute("SELECT 1 FROM lexemes WHERE lexeme_id=?", (src_id,)).fetchone()
+            dst_exists = conn.execute("SELECT 1 FROM lexemes WHERE lexeme_id=?", (dst_id,)).fetchone()
+            if not src_exists or not dst_exists:
+                continue
+            assertion_id = f"rel_seed_{src_id}_{dst_id}_{relation}".replace(':', '_').replace(' ', '_')
+            conn.execute(
+                """
+                INSERT INTO relationship_assertions (assertion_id, src_lexeme_id, dst_lexeme_id, relation,
+                    confidence, disputed, source_name, source_ref, notes, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 0, 'common_seed', 'config/common_etymologies_seed.json', ?, ?, ?)
+                ON CONFLICT(assertion_id) DO UPDATE SET confidence=excluded.confidence, notes=excluded.notes, updated_at=excluded.updated_at
+                """,
+                (assertion_id, src_id, dst_id, relation, confidence, notes_text, now, now),
+            )
+            relationship_count += 1
+
         conn.commit()
-    return {"ok": True, "scripts": script_count, "languages": language_count, "phrase_translations": phrase_count, "lexemes": lexeme_count, "etymology_edges": etymology_count, "pronunciation_profiles": pronunciation_count, "transliteration_profiles": transliteration_profile_count}
+    return {"ok": True, "scripts": script_count, "languages": language_count, "phrase_translations": phrase_count, "lexemes": lexeme_count, "etymology_edges": etymology_count, "pronunciation_profiles": pronunciation_count, "transliteration_profiles": transliteration_profile_count, "phonology_profiles": phonology_count, "variants": variant_count, "semantic_concepts": concept_count, "concept_links": concept_link_count, "relationship_assertions": relationship_count}

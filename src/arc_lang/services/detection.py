@@ -33,6 +33,7 @@ SCRIPT_RANGES: list[tuple[str, list[tuple[int, int]]]] = [
 
 
 def _char_script(cp: int) -> str | None:
+    """Return the script name for a single Unicode codepoint, or None."""
     for script_id, ranges in SCRIPT_RANGES:
         for start, end in ranges:
             if start <= cp <= end:
@@ -41,6 +42,7 @@ def _char_script(cp: int) -> str | None:
 
 
 def detect_script(text: str) -> str | None:
+    """Detect the dominant Unicode script of a text string."""
     counts = Counter(_char_script(ord(ch)) for ch in text if not ch.isspace())
     counts.pop(None, None)
     if not counts:
@@ -50,6 +52,7 @@ def detect_script(text: str) -> str | None:
 
 
 def detect_language(text: str) -> DetectionResult:
+    """Detect the language of a text string using script and seeded lexical heuristics."""
     tokens = [t.casefold() for t in WORD_RE.findall(text)]
     token_set = set(tokens)
     top_script = detect_script(text)

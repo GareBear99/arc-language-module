@@ -7,6 +7,7 @@ STATUS_ORDER = {"offline": 0, "degraded": 1, "healthy": 2}
 
 
 def register_provider(name: str, provider_type: str, enabled: bool = True, local_only: bool = False, notes: str = "") -> dict:
+    """Register a new provider in the provider registry."""
     now = utcnow()
     with connect() as conn:
         conn.execute(
@@ -27,6 +28,7 @@ def register_provider(name: str, provider_type: str, enabled: bool = True, local
 
 
 def set_provider_health(provider_name: str, status: str, latency_ms: int | None = None, error_rate: float | None = None, notes: str = "") -> dict:
+    """Record a health snapshot for a provider."""
     if status not in STATUS_ORDER:
         return {"ok": False, "error": "invalid_status", "allowed": list(STATUS_ORDER.keys())}
     health_id = f"hlth_{uuid.uuid4().hex[:12]}"
@@ -44,6 +46,7 @@ def set_provider_health(provider_name: str, status: str, latency_ms: int | None 
 
 
 def get_provider_record(provider_name: str) -> dict | None:
+    """Return the provider registry record for a named provider, or None if not registered."""
     with connect() as conn:
         row = conn.execute(
             "SELECT provider_name, provider_type, enabled, local_only, notes, created_at, updated_at FROM provider_registry WHERE provider_name = ?",
@@ -53,6 +56,7 @@ def get_provider_record(provider_name: str) -> dict | None:
 
 
 def get_latest_provider_health(provider_name: str) -> dict | None:
+    """Return the most recent health snapshot for a named provider, or None."""
     with connect() as conn:
         row = conn.execute(
             """
@@ -65,6 +69,7 @@ def get_latest_provider_health(provider_name: str) -> dict | None:
 
 
 def list_providers(provider_type: str | None = None) -> dict:
+    """List registered providers, optionally filtered by provider_type."""
     q = "SELECT provider_name, provider_type, enabled, local_only, notes, created_at, updated_at FROM provider_registry"
     params = []
     if provider_type:
@@ -79,6 +84,7 @@ def list_providers(provider_type: str | None = None) -> dict:
 
 
 def provider_is_usable(provider_name: str) -> dict:
+    """Return True if a provider is registered, enabled, and not offline."""
     record = get_provider_record(provider_name)
     if not record:
         return {"ok": False, "usable": False, "reason": "provider_not_registered"}

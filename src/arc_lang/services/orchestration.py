@@ -13,6 +13,7 @@ MATURITY_ORDER = {"none": 0, "seeded": 1, "experimental": 2, "reviewed": 3, "pro
 
 
 def _best_capability(language_id: str, capability_name: str, provider: str | None = None) -> dict | None:
+    """Return the highest-maturity capability record for a language, optionally filtered by provider."""
     query = 'SELECT language_id, capability_name, maturity, confidence, provider, notes FROM language_capabilities WHERE language_id = ? AND capability_name = ?'
     params = [language_id, capability_name]
     if provider:
@@ -27,12 +28,14 @@ def _best_capability(language_id: str, capability_name: str, provider: str | Non
 
 
 def _is_capability_usable(cap: dict | None, minimum: str = 'seeded') -> bool:
+    """Return True if the capability meets the minimum maturity threshold."""
     if not cap:
         return False
     return MATURITY_ORDER.get(cap['maturity'], -1) >= MATURITY_ORDER.get(minimum, 0)
 
 
 def _translation_provider_summary(source_language_id: str, target_language_id: str, preferred_provider: str | None = None) -> dict:
+    """Build a routing summary for a source→target translation request."""
     source_cap = _best_capability(source_language_id, 'translation', preferred_provider) or _best_capability(source_language_id, 'translation')
     target_cap = _best_capability(target_language_id, 'translation', preferred_provider) or _best_capability(target_language_id, 'translation')
     local_seed_ok = bool(_best_capability(source_language_id, 'translation', 'local_seed') or _best_capability(target_language_id, 'translation', 'local_seed'))
@@ -57,6 +60,7 @@ def _translation_provider_summary(source_language_id: str, target_language_id: s
 
 
 def route_runtime_translation(req: RuntimeTranslateRequest) -> dict:
+    """Route a runtime translation request through the provider system."""
     detection = None
     source_language_id = req.source_language_id
     if not source_language_id and req.allow_detect:
@@ -177,6 +181,7 @@ def route_runtime_translation(req: RuntimeTranslateRequest) -> dict:
 
 
 def route_runtime_speech(req: RuntimeSpeechRequest) -> dict:
+    """Route a runtime speech synthesis request through the provider system."""
     if not req.dry_run and get_policy_flag("runtime_default_dry_run", True):
         response = {"ok": False, "error": "runtime_live_execution_blocked_by_policy", "language_id": req.language_id, "requested_provider": req.provider}
         receipt = create_job_receipt("speech", req.provider, req.model_dump(), response, "blocked", ["Policy runtime_default_dry_run=true blocks live speech execution."])

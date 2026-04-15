@@ -4,6 +4,7 @@ from arc_lang.core.models import RelationshipAssertionRequest, utcnow
 
 
 def add_relationship_assertion(req: RelationshipAssertionRequest) -> dict:
+    """Add a cross-lexeme relationship assertion (cognate, borrowing, false_friend, etc.)."""
     now = utcnow()
     assertion_id = f"rel_{req.relation}_{req.src_lexeme_id}_{req.dst_lexeme_id}".replace(':','_').replace(' ','_')
     with connect() as conn:
@@ -24,6 +25,7 @@ def add_relationship_assertion(req: RelationshipAssertionRequest) -> dict:
 
 
 def list_relationship_assertions(lexeme_id: str | None = None, relation: str | None = None) -> dict:
+    """List relationship assertions, optionally filtered by lexeme_id and relation."""
     query = "SELECT * FROM relationship_assertions"
     params = []
     clauses = []
