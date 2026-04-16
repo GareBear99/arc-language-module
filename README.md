@@ -21,8 +21,6 @@ ARC Language Module is **not just a translator**. It is a language knowledge eng
 
 That makes it a better fit for **serious AI infrastructure** than projects that only expose a translation endpoint.
 
-"One of the strongest open-source foundations for governed multilingual orchestration and language-capability management for future AI systems."
-
 ## At-a-glance feature fit
 
 This table is here to make the repo's niche obvious fast: **ARC Language Module is best when you need a governed language backend, not just a translator endpoint.**
@@ -295,30 +293,42 @@ This package can connect to or sit beside external tooling, but does not bundle 
 
 ---
 
-## Suggested GitHub topics
+## Repository metadata
 
-If you want this repo to be easier to discover on GitHub, these are the most relevant topics to set on the repository page:
+### Suggested GitHub topics
+
+Use the most specific topics first so the repo lands in the right lane:
 
 ```text
-language-module
 multilingual
 translation
-localization
-i18n
-nlp
-linguistics
-language-graph
+language-detection
+transliteration
+pronunciation
+phonology
+natural-language-processing
+multilingual-nlp
 knowledge-graph
+language-technology
 fastapi
 sqlite
 cli
 api
+governance
 auditability
-provenance
-runtime-routing
-ai-infrastructure
-language-tech
+orchestration
+local-first
+offline-first
+artificial-intelligence
 ```
+
+### Suggested GitHub About text
+
+> Governed multilingual language-ops substrate for AI systems: language knowledge, provider routing, auditability, readiness, CLI, and API.
+
+### Short promotional line
+
+> A control layer for multilingual AI systems, not just a translator.
 
 ---
 
@@ -326,36 +336,28 @@ language-tech
 
 If this repo is useful to you:
 
-- ⭐ Star the repository
-- 🧪 Open issues for bugs, gaps, or corpus-quality problems
-- 🔧 Send pull requests for new language data, providers, or hardening work
-- 📣 Share it with people building multilingual AI, localization systems, or language tools
-- 💖 Sponsor ongoing development on GitHub
-
-GitHub Sponsors:
-
-- https://github.com/sponsors/GareBear99
+- Star the repository
+- Open issues for bugs, corpus gaps, or runtime/provider edge cases
+- Send pull requests for new language data, provider integrations, or hardening work
+- Share it with people building multilingual AI, localization systems, or language tools
+- Support development on [GitHub Sponsors](https://github.com/sponsors/GareBear99)
 
 ---
 
-## Positioning statement for README / pitches
+## Release and validation status
 
-Use this when you want to describe the repo quickly:
+Current production-track validation for this codebase includes:
 
-> ARC Language Module is a governed multilingual backend foundation for future AI systems. It combines a language graph, ingestion pipeline, runtime routing, coverage/readiness reporting, and evidence surfaces so an AI stack can know what languages it supports, what is missing, and how to route work honestly.
+- **336 passing tests**
+- wheel and sdist build verification
+- installed-wheel smoke validation
+- FastAPI app-load verification
+- CLI help / release snapshot verification
 
-Short version:
-
-> A language intelligence hub for AI systems — not just a translator.
-
----
-
-## Tests
-
-The production-hardening passes ended with **336 passing tests**, plus build/install smoke verification for the packaged wheel and sdist.
+These checks support the repo's current positioning as a **production-track language infrastructure package**, while real-world deployment quality still depends on the target environment, provider integrations, telemetry, and soak testing.
 
 ---
 
 ## License
 
-See [`LICENSE`](LICENSE) if present in your target repo root, or add your preferred license before publishing.
+This project is intended to ship under the **MIT License**. Add a root `LICENSE` file in the public repository so the visible GitHub repo matches the package metadata.
