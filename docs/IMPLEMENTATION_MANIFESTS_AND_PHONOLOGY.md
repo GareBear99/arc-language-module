@@ -34,12 +34,12 @@ The report is stored in `implementation_matrix_reports` and can be listed with `
 
 | Surface | Coverage | Notes |
 |---------|----------|-------|
-| Phrase translations | 34 languages × common phrases | Seeded from config; not a full translation corpus |
+| Phrase translations | 35 languages × 11 canonical keys | Seeded from config; not a full translation corpus |
 | Lexeme + etymology graph | Seed data for common words | Not a full lexical database |
 | Phonology profiles | 12 languages | Broad IPA hints + stress/syllable info. Not full phonemic inventory. See below. |
 | Transliteration profiles | 11 entries across 9 languages | Scheme-level metadata + example. Not a character-level mapping engine. |
 | Pronunciation profiles | Seeded per language | Romanization scheme + IPA hint. Not a TTS phoneme set. |
-| Local seeded translation | 34 languages | Phrase-match only; does not generalize |
+| Local seeded translation | 35 languages | Phrase-match only; does not generalize |
 
 ### Requires external backend (explicitly not implemented)
 

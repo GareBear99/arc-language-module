@@ -6,7 +6,7 @@ All structural growth surfaces are implemented and governed. This document maps 
 
 `language_aliases` table stores governed aliases with `alias_type` (endonym/exonym/autonym/romanized/alias), `script_id`, `region_hint`, `source_name`, `confidence`. Searchable via both `search_languages` (queries both `aliases_json` seed column and the `language_aliases` table) and `list-language-aliases`.
 
-77 aliases seeded across 34 languages. Operators can add via `upsert-language-alias`.
+79 aliases seeded across 35 languages. Operators can add via `upsert-language-alias`.
 
 ## Cross-lexeme relationship assertions
 
@@ -45,7 +45,7 @@ Operator-updatable at runtime. Changes take effect on next `resolve_effective_li
 
 ## Language variants
 
-`language_variants` table. 37 dialect/register/orthography/historical_stage entries seeded for 12 languages. `mutual_intelligibility` field (0.0–1.0) tracks cross-variant comprehensibility. All 4 variant types are operational.
+`language_variants` table. 104 dialect/register/orthography/historical_stage entries seeded across the seed set. `mutual_intelligibility` field (0.0–1.0) tracks cross-variant comprehensibility. All 4 variant types are operational.
 
 ## Conflict review exports
 

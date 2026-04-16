@@ -31,7 +31,7 @@ Live imports return separate `records_inserted` and `records_updated` counters.
 ## Import order (recommended)
 
 1. `init-db` — initialize schema
-2. `seed-common-languages` — bootstrap 34 languages, 14 families, providers, manifests, phonology/transliteration profiles
+2. `seed-common-languages` — bootstrap 35 languages, 14 families, providers, manifests, phonology/transliteration profiles
 3. `import-glottolog-fixture <path>` — genealogical structure
 4. `import-iso-fixture <path>` — authoritative ISO codes and aliases
 5. `import-cldr-fixture <path>` — script mappings and aliases

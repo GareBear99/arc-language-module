@@ -38,7 +38,7 @@ This document records the package's internal surface audit — what is fully imp
 
 | Surface | Coverage | Gap |
 |---------|----------|-----|
-| Phrase translations | 34 languages × 3 canonical keys | Only 3 phrase groups; not a full dictionary |
+| Phrase translations | 35 languages × 11 canonical keys | Seeded phrase coverage; not a full dictionary or corpus |
 | Lexemes | 7 entries | Requires real lexical corpus for expansion |
 | Etymology edges | 1 edge | Requires real etymological data |
 | Relationship assertions | 0 seeded | Requires scholarly linguistic data |
