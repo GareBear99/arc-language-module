@@ -19,7 +19,9 @@ API (requires uvicorn)::
 
     uvicorn arc_lang.api.app:app --reload
 """
-__version__ = "0.24.0"
+from arc_lang.version import VERSION
+
+__version__ = VERSION
 __author__ = "ARC System"
 
 # Convenience re-exports for common entry points
