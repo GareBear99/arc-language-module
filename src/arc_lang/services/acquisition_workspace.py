@@ -89,7 +89,7 @@ def validate_staged_asset(req: ValidationReportRequest) -> dict:
                 summary['zip_entries'] = zf.namelist()[:50]
         else:
             notes.append('no_deep_validator_for_detected_kind')
-    except Exception as e:
+    except (UnicodeDecodeError, json.JSONDecodeError, csv.Error, zipfile.BadZipFile, OSError) as e:
         status = 'failed'
         notes.append(f'parse_error:{type(e).__name__}')
     if req.expected_kind != 'any' and detected_kind != req.expected_kind:

@@ -9,6 +9,122 @@ from arc_lang.core.models import ScriptRecord, LanguageRecord, utcnow
 from arc_lang.services.source_policy import seed_source_weights
 from arc_lang.services.manifests import seed_manifests
 
+CONFIG_ROOT = Path(__file__).resolve().parents[3] / "config"
+
+
+SEED_PROVIDERS = [
+    ("local_detect", "translation", 1, 1, "Local detection/runtime helper provider."),
+    ("local_seed", "translation", 1, 1, "Local seeded phrase translation provider."),
+    ("local_graph", "translation", 1, 1, "Local lineage/graph provider."),
+    ("local_map", "translation", 1, 1, "Local transliteration mapping provider."),
+    ("mirror_mock", "translation", 1, 1, "Local same-language mirror backend for runtime pipeline tests."),
+    ("argos_local", "translation", 1, 1, "Optional local Argos Translate adapter when argostranslate is installed."),
+    ("argos_bridge", "translation", 1, 0, "Boundary stub alias for future/live Argos bridge compatibility."),
+    ("nllb_bridge", "translation", 1, 0, "Boundary stub for future NLLB translation adapter."),
+    ("disabled", "speech", 1, 1, "Disabled speech sink for unsupported languages."),
+    ("personaplex", "speech", 1, 0, "Optional NVIDIA PersonaPlex speech provider boundary."),
+]
+
+LOCAL_PROVIDER_HEALTH = [
+    ("local_seed", "healthy", 0, 0.0, "Seeded phrase translation backend — always available."),
+    ("local_detect", "healthy", 0, 0.0, "Script and lexical detection backend — always available."),
+    ("local_graph", "healthy", 0, 0.0, "Lineage graph provider — always available."),
+    ("local_map", "healthy", 0, 0.0, "Transliteration profile mapping — always available."),
+    ("mirror_mock", "healthy", 1, 0.0, "Same-language mirror backend — always available."),
+    ("argos_local", "degraded", None, None, "Optional — healthy only if argostranslate is installed and models are downloaded."),
+    ("argos_bridge", "offline", None, None, "Bridge stub — offline until a live adapter is configured."),
+    ("nllb_bridge", "offline", None, None, "Bridge stub — offline until a live adapter is configured."),
+    ("disabled", "healthy", 0, 0.0, "Disabled speech provider — always responds (with disabled status)."),
+    ("personaplex", "offline", None, None, "Boundary stub — offline until NVIDIA runtime is configured."),
+]
+
+SEEDED_RELATIONSHIPS = [
+    ("lex:rus:нет", "lex:ukr:ні", "cognate", 0.92, "Proto-Slavic *ne- cognates"),
+    ("lex:rus:нет", "lex:pol:nie", "cognate", 0.88, "Proto-Slavic *ne- cognates"),
+    ("lex:ukr:ні", "lex:pol:nie", "cognate", 0.88, "Proto-Slavic *ne- cognates"),
+    ("lex:spa:gracias", "lex:ita:grazie", "cognate", 0.95, "Latin gratia > Romance cognates"),
+    ("lex:spa:gracias", "lex:fra:merci", "false_friend", 0.20, "Different etymologies: gracias < gratia, merci < mercedem"),
+    ("lex:por:tchau", "lex:ita:ciao", "borrowing", 0.95, "Portuguese borrowed Italian ciao"),
+    ("lex:yue:你好", "lex:cmn:你好", "cognate", 0.99, "Same Sinitic characters; different spoken forms"),
+    ("lex:yue:再见", "lex:cmn:再见", "cognate", 0.99, "Same Sinitic characters; Cantonese reading differs"),
+    ("lex:arb:مرحبا", "lex:fas:سلام", "false_friend", 0.20, "Different roots: marhaba (Ar) vs salaam (Persian/Arabic)"),
+    ("lex:arb:شكرا", "lex:urd:شکریہ", "borrowing", 0.90, "Urdu shukria borrowed from Arabic shukran"),
+    ("lex:arb:مرحبا", "lex:heb:שלום", "false_friend", 0.15, "Different Semitic roots; shalom = peace, marhaba = welcome"),
+]
+
+
+def _load_json(path: str | Path) -> dict:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _load_seed_payloads(seed_path: str | Path | None, phrase_path: str | Path | None, etymology_path: str | Path | None) -> dict[str, dict]:
+    seed_path = Path(seed_path or SEED_PATH)
+    phrase_path = Path(phrase_path or PHRASE_PATH)
+    etymology_path = Path(etymology_path or ETYMOLOGY_SEED_PATH)
+    return {
+        "languages": _load_json(seed_path),
+        "phrases": _load_json(phrase_path),
+        "etymology": _load_json(etymology_path),
+        "pronunciation": _load_json(CONFIG_ROOT / "pronunciation_seed.json"),
+        "phonology": _load_json(PHONOLOGY_SEED_PATH),
+        "transliteration": _load_json(TRANSLITERATION_SEED_PATH),
+        "variants": _load_json(VARIANTS_SEED_PATH),
+        "concepts": _load_json(CONCEPTS_SEED_PATH),
+    }
+
+
+def _initialize_seed_environment() -> str:
+    now = utcnow()
+    seed_source_weights()
+    seed_manifests()
+    _seed_default_policies()
+    return now
+
+
+def _seed_provider_registry(conn, now: str) -> None:
+    for provider_name, provider_type, enabled, local_only, notes in SEED_PROVIDERS:
+        conn.execute(
+            """
+            INSERT INTO provider_registry (provider_name, provider_type, enabled, local_only, notes, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(provider_name) DO UPDATE SET provider_type=excluded.provider_type, enabled=excluded.enabled, local_only=excluded.local_only, notes=excluded.notes, updated_at=excluded.updated_at
+            """,
+            (provider_name, provider_type, enabled, local_only, notes, now, now),
+        )
+
+
+def _seed_provider_health(conn, now: str) -> None:
+    for pname, status, latency_ms, error_rate, health_notes in LOCAL_PROVIDER_HEALTH:
+        health_id = f"health_seed_{pname}"
+        conn.execute(
+            """
+            INSERT INTO provider_health (health_id, provider_name, status, latency_ms, error_rate, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(health_id) DO UPDATE SET status=excluded.status, latency_ms=excluded.latency_ms, error_rate=excluded.error_rate, notes=excluded.notes
+            """,
+            (health_id, pname, status, latency_ms, error_rate, health_notes, now),
+        )
+
+
+def _seed_relationship_assertions(conn, now: str) -> int:
+    relationship_count = 0
+    for src_id, dst_id, relation, confidence, notes_text in SEEDED_RELATIONSHIPS:
+        src_exists = conn.execute("SELECT 1 FROM lexemes WHERE lexeme_id=?", (src_id,)).fetchone()
+        dst_exists = conn.execute("SELECT 1 FROM lexemes WHERE lexeme_id=?", (dst_id,)).fetchone()
+        if not src_exists or not dst_exists:
+            continue
+        assertion_id = f"rel_seed_{src_id}_{dst_id}_{relation}".replace(':', '_').replace(' ', '_')
+        conn.execute(
+            """
+            INSERT INTO relationship_assertions (assertion_id, src_lexeme_id, dst_lexeme_id, relation,
+                confidence, disputed, source_name, source_ref, notes, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 0, 'common_seed', 'config/common_etymologies_seed.json', ?, ?, ?)
+            ON CONFLICT(assertion_id) DO UPDATE SET confidence=excluded.confidence, notes=excluded.notes, updated_at=excluded.updated_at
+            """,
+            (assertion_id, src_id, dst_id, relation, confidence, notes_text, now, now),
+        )
+        relationship_count += 1
+    return relationship_count
 
 def _upsert_provenance(conn, record_type: str, record_id: str, source_name: str, source_ref: str | None, confidence: float, notes: str, now: str) -> None:
     """Upsert a provenance record for a seeded entity."""
@@ -44,21 +160,16 @@ def _ensure_lineage_node(conn, node_type: str, name: str, parent_node_id: str | 
 
 def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | Path | None = None, etymology_path: str | Path | None = None) -> dict:
     """Seed all common data: scripts, languages, phrases, lexemes, profiles, variants, concepts, and relationships."""
-    seed_path = Path(seed_path or SEED_PATH)
-    phrase_path = Path(phrase_path or PHRASE_PATH)
-    etymology_path = Path(etymology_path or ETYMOLOGY_SEED_PATH)
-    payload = json.loads(seed_path.read_text(encoding="utf-8"))
-    phrase_payload = json.loads(phrase_path.read_text(encoding="utf-8"))
-    ety_payload = json.loads(etymology_path.read_text(encoding="utf-8"))
-    pron_payload = json.loads((Path(__file__).resolve().parents[3] / 'config' / 'pronunciation_seed.json').read_text(encoding='utf-8'))
-    phon_payload = json.loads(Path(PHONOLOGY_SEED_PATH).read_text(encoding='utf-8'))
-    translit_payload = json.loads(Path(TRANSLITERATION_SEED_PATH).read_text(encoding='utf-8'))
-    variants_payload = json.loads(Path(VARIANTS_SEED_PATH).read_text(encoding='utf-8'))
-    concepts_payload = json.loads(Path(CONCEPTS_SEED_PATH).read_text(encoding='utf-8'))
-    now = utcnow()
-    seed_source_weights()
-    seed_manifests()
-    _seed_default_policies()  # Ensure operator_policies defaults are always present
+    payloads = _load_seed_payloads(seed_path, phrase_path, etymology_path)
+    payload = payloads["languages"]
+    phrase_payload = payloads["phrases"]
+    ety_payload = payloads["etymology"]
+    pron_payload = payloads["pronunciation"]
+    phon_payload = payloads["phonology"]
+    translit_payload = payloads["transliteration"]
+    variants_payload = payloads["variants"]
+    concepts_payload = payloads["concepts"]
+    now = _initialize_seed_environment()
     script_count = 0
     language_count = 0
     phrase_count = 0
@@ -71,52 +182,8 @@ def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | P
     concept_count = 0
     concept_link_count = 0
     with connect() as conn:
-
-        seed_providers = [
-            ("local_detect", "translation", 1, 1, "Local detection/runtime helper provider."),
-            ("local_seed", "translation", 1, 1, "Local seeded phrase translation provider."),
-            ("local_graph", "translation", 1, 1, "Local lineage/graph provider."),
-            ("local_map", "translation", 1, 1, "Local transliteration mapping provider."),
-            ("mirror_mock", "translation", 1, 1, "Local same-language mirror backend for runtime pipeline tests."),
-            ("argos_local", "translation", 1, 1, "Optional local Argos Translate adapter when argostranslate is installed."),
-            ("argos_bridge", "translation", 1, 0, "Boundary stub alias for future/live Argos bridge compatibility."),
-            ("nllb_bridge", "translation", 1, 0, "Boundary stub for future NLLB translation adapter."),
-            ("disabled", "speech", 1, 1, "Disabled speech sink for unsupported languages."),
-            ("personaplex", "speech", 1, 0, "Optional NVIDIA PersonaPlex speech provider boundary."),
-        ]
-        for provider_name, provider_type, enabled, local_only, notes in seed_providers:
-            conn.execute(
-                """
-                INSERT INTO provider_registry (provider_name, provider_type, enabled, local_only, notes, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(provider_name) DO UPDATE SET provider_type=excluded.provider_type, enabled=excluded.enabled, local_only=excluded.local_only, notes=excluded.notes, updated_at=excluded.updated_at
-                """,
-                (provider_name, provider_type, enabled, local_only, notes, now, now),
-            )
-
-        # Seed initial provider health snapshots for local providers
-        local_provider_health = [
-            ("local_seed",   "healthy", 0,    0.0, "Seeded phrase translation backend — always available."),
-            ("local_detect", "healthy", 0,    0.0, "Script and lexical detection backend — always available."),
-            ("local_graph",  "healthy", 0,    0.0, "Lineage graph provider — always available."),
-            ("local_map",    "healthy", 0,    0.0, "Transliteration profile mapping — always available."),
-            ("mirror_mock",  "healthy", 1,    0.0, "Same-language mirror backend — always available."),
-            ("argos_local",  "degraded", None, None, "Optional — healthy only if argostranslate is installed and models are downloaded."),
-            ("argos_bridge", "offline",  None, None, "Bridge stub — offline until a live adapter is configured."),
-            ("nllb_bridge",  "offline",  None, None, "Bridge stub — offline until a live adapter is configured."),
-            ("disabled",     "healthy",  0,    0.0, "Disabled speech provider — always responds (with disabled status)."),
-            ("personaplex",  "offline",  None, None, "Boundary stub — offline until NVIDIA runtime is configured."),
-        ]
-        for pname, status, latency_ms, error_rate, health_notes in local_provider_health:
-            health_id = f"health_seed_{pname}"
-            conn.execute(
-                """
-                INSERT INTO provider_health (health_id, provider_name, status, latency_ms, error_rate, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(health_id) DO UPDATE SET status=excluded.status, latency_ms=excluded.latency_ms, error_rate=excluded.error_rate, notes=excluded.notes
-                """,
-                (health_id, pname, status, latency_ms, error_rate, health_notes, now),
-            )
+        _seed_provider_registry(conn, now)
+        _seed_provider_health(conn, now)
         for script in payload.get("scripts", []):
             rec = ScriptRecord(**script)
             conn.execute(
@@ -406,45 +473,7 @@ def ingest_common_seed(seed_path: str | Path | None = None, phrase_path: str | P
                     )
                     concept_link_count += 1
 
-        # Seed cross-lexeme relationship assertions (cognate / borrowing / false_friend)
-        # These are seed-time operator assertions — not external corpus claims.
-        relationship_count = 0
-        seeded_relationships = [
-            # Slavic negation cognates
-            ("lex:rus:нет",    "lex:ukr:ні",      "cognate",      0.92, "Proto-Slavic *ne- cognates"),
-            ("lex:rus:нет",    "lex:pol:nie",      "cognate",      0.88, "Proto-Slavic *ne- cognates"),
-            ("lex:ukr:ні",     "lex:pol:nie",      "cognate",      0.88, "Proto-Slavic *ne- cognates"),
-            # Romance gratitude cognates (Latin gratia)
-            ("lex:spa:gracias", "lex:ita:grazie",  "cognate",      0.95, "Latin gratia > Romance cognates"),
-            ("lex:spa:gracias", "lex:fra:merci",   "false_friend", 0.20, "Different etymologies: gracias < gratia, merci < mercedem"),
-            # Greeting borrowings
-            ("lex:por:tchau",  "lex:ita:ciao",     "borrowing",    0.95, "Portuguese borrowed Italian ciao"),
-            # Mandarin/Cantonese shared characters
-            ("lex:yue:你好",   "lex:cmn:你好",     "cognate",      0.99, "Same Sinitic characters; different spoken forms"),
-            ("lex:yue:再见",   "lex:cmn:再见",     "cognate",      0.99, "Same Sinitic characters; Cantonese reading differs"),
-            # Arabic/Urdu/Persian shared greeting roots
-            ("lex:arb:مرحبا", "lex:fas:سلام",     "false_friend", 0.20, "Different roots: marhaba (Ar) vs salaam (Persian/Arabic)"),
-            ("lex:arb:شكرا",  "lex:urd:شکریہ",   "borrowing",    0.90, "Urdu shukria borrowed from Arabic shukran"),
-            # Salam/Shalom cognates (Semitic)
-            ("lex:arb:مرحبا", "lex:heb:שלום",    "false_friend", 0.15, "Different Semitic roots; shalom = peace, marhaba = welcome"),
-        ]
-
-        for src_id, dst_id, relation, confidence, notes_text in seeded_relationships:
-            src_exists = conn.execute("SELECT 1 FROM lexemes WHERE lexeme_id=?", (src_id,)).fetchone()
-            dst_exists = conn.execute("SELECT 1 FROM lexemes WHERE lexeme_id=?", (dst_id,)).fetchone()
-            if not src_exists or not dst_exists:
-                continue
-            assertion_id = f"rel_seed_{src_id}_{dst_id}_{relation}".replace(':', '_').replace(' ', '_')
-            conn.execute(
-                """
-                INSERT INTO relationship_assertions (assertion_id, src_lexeme_id, dst_lexeme_id, relation,
-                    confidence, disputed, source_name, source_ref, notes, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, 0, 'common_seed', 'config/common_etymologies_seed.json', ?, ?, ?)
-                ON CONFLICT(assertion_id) DO UPDATE SET confidence=excluded.confidence, notes=excluded.notes, updated_at=excluded.updated_at
-                """,
-                (assertion_id, src_id, dst_id, relation, confidence, notes_text, now, now),
-            )
-            relationship_count += 1
+        relationship_count = _seed_relationship_assertions(conn, now)
 
         conn.commit()
     return {"ok": True, "scripts": script_count, "languages": language_count, "phrase_translations": phrase_count, "lexemes": lexeme_count, "etymology_edges": etymology_count, "pronunciation_profiles": pronunciation_count, "transliteration_profiles": transliteration_profile_count, "phonology_profiles": phonology_count, "variants": variant_count, "semantic_concepts": concept_count, "concept_links": concept_link_count, "relationship_assertions": relationship_count}

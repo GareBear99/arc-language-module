@@ -37,7 +37,7 @@ def export_evidence_bundle(output_path: str, language_ids: list[str] | None = No
     export_id = f"exp_{uuid.uuid4().hex[:12]}"
     summary = {
         "languages_exported": language_ids,
-        "provider_count": len(bundle.get("providers", {}).get("results", [])),
+        "provider_count": len(bundle.get("providers", {}).get("providers", [])),
         "included_receipts": include_receipts,
         "included_runtime": include_runtime,
         "included_graph": include_graph,

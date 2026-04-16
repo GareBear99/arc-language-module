@@ -81,8 +81,8 @@ def get_argos_local_diagnostics() -> dict:
                 if to_code:
                     targets.append(to_code)
                     pairs.append({"source_runtime_code": code, "target_runtime_code": to_code})
-        except Exception:
-            pass
+        except Exception as e:
+            result.setdefault("warnings", []).append(f"language_pair_scan_failed:{code}:{type(e).__name__}")
         langs.append({"runtime_code": code, "name": name, "target_runtime_codes": sorted(set(targets))})
     result["installed_languages"] = sorted(langs, key=lambda x: (x['runtime_code'] or ''))
     result["installed_pairs"] = sorted(pairs, key=lambda x: (x['source_runtime_code'] or '', x['target_runtime_code'] or ''))
@@ -249,7 +249,7 @@ def get_translation_readiness_matrix(target_language_id: str | None = None, prov
     for src in source_ids:
         for dst in target_ids:
             if src == dst and provider_name not in {None, 'mirror_mock', 'local_seed'}:
-                pass
+                continue
             readiness = get_translation_pair_readiness(src, dst, provider_name=provider_name)
             if readiness.get('ok'):
                 rows.append({

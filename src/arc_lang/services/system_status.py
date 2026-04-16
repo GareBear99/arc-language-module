@@ -16,9 +16,10 @@ def _count(query: str, params: tuple = ()) -> int:
 def get_system_status() -> dict:
     """Return a full system status snapshot: graph, providers, health, governance, receipts, policy."""
     stats = get_graph_stats()
-    providers = list_providers().get("results", [])
+    providers = list_providers().get("providers", [])
     provider_summary = {
         "total": len(providers),
+        "total_registered": len(providers),
         "enabled": sum(1 for p in providers if p.get("enabled")),
         "disabled": sum(1 for p in providers if not p.get("enabled")),
         "local_only": sum(1 for p in providers if p.get("local_only")),
@@ -65,6 +66,7 @@ def get_system_status() -> dict:
         "status": status,
         "graph": stats,
         "providers": provider_summary,
+        "provider_summary": provider_summary,
         "provider_health": health_summary,
         "readiness_summary": readiness_summary,
         "governance": governance_summary,
