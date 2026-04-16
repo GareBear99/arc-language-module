@@ -21,6 +21,32 @@ ARC Language Module is **not just a translator**. It is a language knowledge eng
 
 That makes it a better fit for **serious AI infrastructure** than projects that only expose a translation endpoint.
 
+## At-a-glance feature fit
+
+This table is here to make the repo's niche obvious fast: **ARC Language Module is best when you need a governed language backend, not just a translator endpoint.**
+
+| Capability / fit | ARC Language Module | Argos Translate | LibreTranslate | Firefox Translations / Bergamot | Unicode CLDR |
+|---|---|---|---|---|---|
+| Structured language graph | **Yes — core strength** | Limited | Limited | No | **Yes — locale/reference focused** |
+| Runtime translation | Partial / routed | **Yes — core strength** | **Yes — core strength** | **Yes — browser focused** | No |
+| Offline / local-first operation | **Yes** | **Yes** | **Yes** | **Yes** | Data/library dependent |
+| API surface | **Yes** | Limited / wrapper dependent | **Yes — core strength** | No public ops API focus | No |
+| CLI / operator workflows | **Yes** | **Yes** | Limited admin focus | No | Limited tooling focus |
+| Coverage / readiness matrix | **Yes — core strength** | No | No | No | Partial via locale coverage |
+| Provenance / governed ingestion | **Yes — core strength** | No | No | No | Contributor/repository process, not runtime governance |
+| Release / evidence snapshots | **Yes** | No | No | No | No |
+| Best used for | **AI language substrate, multilingual control plane, governed routing** | Offline translation library | Self-hosted translation API | Private browser/page translation | Locale data and internationalization reference |
+| Stronger than ARC at | Auditability, routing, graph modeling | Raw offline MT packaging | Simple translation API deployment | Seamless in-browser page translation | Breadth of locale standards/reference data |
+| Stronger than others at | **Governed language infrastructure** | Offline MT inference | Translation API simplicity | Browser-native private translation | Standards/reference ecosystem depth |
+
+### Quick read of the table
+
+- Choose **ARC Language Module** when you need to know **what languages you support, how well you support them, what data you have, what runtime paths exist, and what changed over time**.
+- Choose **Argos Translate** when you mainly want **local/offline translation models**.
+- Choose **LibreTranslate** when you mainly want **a translation API you can self-host quickly**.
+- Choose **Firefox Translations / Bergamot** when you mainly want **private, on-device browser translation**.
+- Choose **Unicode CLDR** when you mainly want **locale/reference data for i18n and formatting**.
+
 ---
 
 ## What this repo is, in plain English
