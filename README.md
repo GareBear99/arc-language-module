@@ -21,6 +21,8 @@ ARC Language Module is **not just a translator**. It is a language knowledge eng
 
 That makes it a better fit for **serious AI infrastructure** than projects that only expose a translation endpoint.
 
+“One of the strongest open-source foundations for governed multilingual orchestration and language-capability management for future AI systems.”
+
 ## At-a-glance feature fit
 
 This table is here to make the repo's niche obvious fast: **ARC Language Module is best when you need a governed language backend, not just a translator endpoint.**
