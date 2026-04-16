@@ -6,7 +6,7 @@ Covers all session-12 completions:
   - 96 lexemes seeded (added Dutch/Ukrainian/Italian/Portuguese/Cantonese yes/no)
   - 36 etymology edges across 4 relation types
   - 7 relationship assertions
-  - __init__.py version = 0.24.0 with correct exports
+  - __init__.py version = 0.27.0 with correct exports
   - Language variants: 104 entries, all 35 languages covered
   - phrase_formal register correctly persisted
 """
@@ -33,7 +33,7 @@ def setup_module(module):
 
 def test_package_version():
     import arc_lang
-    assert arc_lang.__version__ == "0.24.0"
+    assert arc_lang.__version__ == "0.27.0"
 
 
 def test_package_exports():

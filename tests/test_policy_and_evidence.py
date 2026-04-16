@@ -49,3 +49,14 @@ def test_evidence_export_and_status(tmp_path: Path):
     assert status['ok']
     assert 'policy' in status
     assert status['receipts']['evidence_exports'] >= 1
+
+def test_system_status_and_evidence_include_provider_counts(tmp_path: Path):
+    out = tmp_path / 'bundle_counts.json'
+    exported = export_evidence_bundle(str(out), language_ids=['lang:spa'])
+    assert exported['ok']
+    assert exported['summary']['provider_count'] >= 1
+
+    status = get_system_status()
+    assert status['provider_summary']['total_registered'] >= 1
+    assert status['provider_summary']['enabled'] >= 1
+

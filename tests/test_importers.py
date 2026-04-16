@@ -47,3 +47,14 @@ def test_imported_lineage_resolves_family_node():
     res = get_lineage('lang:nav')
     assert res['ok'] is True
     assert any(n['node_type'] == 'family' and n['name'] == 'Na-Dene' for n in res['lineage_nodes'])
+
+
+def test_importers_has_no_duplicate_helper_definitions():
+    src = (ROOT / 'src' / 'arc_lang' / 'services' / 'importers.py').read_text(encoding='utf-8')
+    assert src.count('def _normalize_aliases(') == 1
+    assert src.count('def _normalize_scripts(') == 1
+    assert src.count('def _slug(') == 1
+    assert src.count('def _record_import_run(') == 1
+    assert src.count('def _upsert_provenance(') == 1
+    assert src.count('def _ensure_lineage_node(') == 1
+    assert src.count('def _ensure_language_row(') == 1

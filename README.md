@@ -1,4 +1,4 @@
-# ARC Language Module v0.24 (production-track)
+# ARC Language Module v0.27 (production-track)
 
 A governed, auditable multilingual language/script/lineage substrate.
 Separates graph truth from runtime capability, and package-owned data from external corpus dependencies.
@@ -7,7 +7,7 @@ Separates graph truth from runtime capability, and package-owned data from exter
 
 ## What this package actually is
 
-- A **SQLite-backed language graph** — 34 seeded languages across 14 families, with scripts, aliases, lineage edges, phonology profiles, transliteration profiles, pronunciation profiles, and dialect/register/orthography variants.
+- A **SQLite-backed language graph** — 35 seeded languages across 14 families, with scripts, aliases, lineage edges, phonology profiles, transliteration profiles, pronunciation profiles, and dialect/register/orthography variants.
 - A **governed ingestion pipeline** — dry-run mode, conflict detection, dedup reporting, provenance tracking for Glottolog, ISO 639-3, and CLDR corpora.
 - A **runtime routing layer** — separates knowing a language from being able to translate or speak it. Every provider gap is surfaced explicitly, never silently.
 - An **operator tooling layer** — acquisition workspace, coverage reports, implementation matrix, evidence bundles, conflict review exports, policy controls.
@@ -19,7 +19,7 @@ Separates graph truth from runtime capability, and package-owned data from exter
 
 - A full translation engine — local seeded phrase translation only; Argos/NLLB are optional external dependencies
 - A full TTS/speech system — PersonaPlex and similar are boundary stubs
-- A complete phonemic inventory — all 34 phonology profiles are broad IPA hints with explicit scope notes
+- A complete phonemic inventory — all 35 phonology profiles are broad IPA hints with explicit scope notes
 - A character-level transliteration engine — profiles declare the scheme and maturity; character mapping tables are not bundled
 
 ---
@@ -39,23 +39,38 @@ python -m arc_lang.cli.main build-implementation-matrix
 
 ---
 
-## Seed coverage (v0.24)
+## Seed coverage (v0.27)
 
 | Surface | Count | Notes |
 |---------|-------|-------|
-| Languages | 34 | Across 14 families |
+| Languages | 35 | Across 14 families |
 | Families / branches (lineage nodes) | 33 | |
 | Scripts | 15 | Latn, Cyrl, Arab, Deva, Beng, Guru, Taml, Telu, Thai, Hira/Kana, Kore, Hans/Hant, Hebr, Ethi, Cher, Grek |
-| Language aliases | 77 | Endonyms, exonyms, romanized forms |
-| Phonology profiles | 34 | All 34 seeded languages — broad IPA hints |
+| Language aliases | 79 | Endonyms, exonyms, romanized forms |
+| Phonology profiles | 35 | All 35 seeded languages — broad IPA hints |
 | Transliteration profiles | 21 | All non-Latin-script languages |
-| Pronunciation profiles | 34 | All 34 seeded languages |
-| Language variants | 37 | Dialects, registers, orthographies, historical stages |
-| Phrase translations | 71 | Common phrases across all 34 languages |
+| Pronunciation profiles | 35 | All 35 seeded languages |
+| Language variants | 104 | Dialects, registers, orthographies, historical stages |
+| Phrase translations | 385 | Common phrases across 35 languages and 11 canonical keys |
 | Provider registry | 10 | local + optional stubs |
-| Language capabilities | 238 | Maturity-tracked per language per capability |
+| Language capabilities | 245 | Maturity-tracked per language per capability |
 
-All 34 seeded languages have zero missing-profile flags in coverage reports. Transliteration profiles are only required for non-Latin-script languages — Latin-script languages correctly report `missing_transliteration: false`.
+All 35 seeded languages have zero missing-profile flags in coverage reports. Transliteration profiles are only required for non-Latin-script languages — Latin-script languages correctly report `missing_transliteration: false`.
+
+---
+
+
+## Release integrity
+
+```bash
+python -m arc_lang.cli.main release-snapshot
+```
+
+This emits:
+- the single-source package version
+- pyproject/version consistency checks
+- API health/version constant checks
+- live seeded graph counts for release verification
 
 ---
 
@@ -77,7 +92,7 @@ Live imports report: `records_seen`, `records_inserted`, `records_updated`, `con
 
 ## Phonology
 
-All 34 languages have seeded broad IPA phonology profiles including: stress policy, syllable template, IPA examples. Low-resource languages (Navajo, Cherokee, Plains Cree) include explicit notes directing operators to authoritative community resources.
+All 35 languages have seeded broad IPA phonology profiles including: stress policy, syllable template, IPA examples. Low-resource languages (Navajo, Cherokee, Plains Cree) include explicit notes directing operators to authoritative community resources.
 
 ```bash
 python -m arc_lang.cli.main phonology-hint "こんにちは" lang:jpn
@@ -100,7 +115,7 @@ python -m arc_lang.cli.main transliterate "привет" Cyrl Latn
 
 ## Language variants
 
-37 dialect, register, orthography, and historical-stage variants seeded for 12 languages.
+104 dialect, register, orthography, and historical-stage variants seeded across the seed set.
 
 ```bash
 python -m arc_lang.cli.main list-language-variants --language-id lang:eng

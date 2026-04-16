@@ -39,7 +39,7 @@ def test_health_route():
     assert r.status_code == 200
     data = r.json()
     assert data["ok"] is True
-    assert data["version"] == "0.24.0"
+    assert data["version"] == "0.27.0"
 
 
 def test_stats_route():
