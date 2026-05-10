@@ -47,6 +47,35 @@ This table is here to make the repo's niche obvious fast: **ARC Language Module 
 - Choose **Firefox Translations / Bergamot** when you mainly want **private, on-device browser translation**.
 - Choose **Unicode CLDR** when you mainly want **locale/reference data for i18n and formatting**.
 
+
+---
+
+## ARC ecosystem role — language weight, provenance, and portable AI memory
+
+ARC Language Module is the **lexical and provenance spine** for the broader ARC stack. It is where language records, aliases, scripts, variants, pronunciation hints, phonology, transliteration profiles, seeded phrase knowledge, semantic concepts, and source manifests are kept inspectable instead of being hidden inside model weights.
+
+Current boundary:
+
+- **This repo is the language substrate.** It carries structured multilingual knowledge and provenance that future ARC-style systems can query, audit, and extend.
+- **It is not a hidden dataset dump.** Current seed data is curated and manifest-backed; external corpora should enter through ingestion plans, source manifests, dry-run checks, and review.
+- **It complements ARC-Neuron/LLMBuilder.** ARC-Neuron can use this module as the language/lexical truth layer while model weights remain candidate-gated and benchmarked separately.
+- **It supports portable AI memory.** [Omnibinary Runtime](https://github.com/GareBear99/omnibinary-runtime) + [Arc-RAR](https://github.com/GareBear99/Arc-RAR) are the intended archive/replay/restore layer for moving ARC-style knowledge, receipts, and language state across devices without losing source-spine continuity.
+- **It can pair with visual memory.** [ARC-StreamMemory](https://github.com/GareBear99/ARC-StreamMemory) is the visual/video memory add-on being built for ARC-style systems and other LLM stacks; this language module gives those visual memories a cleaner multilingual naming, description, pronunciation, and concept layer.
+- **It connects to the long-horizon interface path.** [ProtoSynth / Neural Synth](https://github.com/GareBear99/Proto-Synth_Grid_Engine) is the planned spatial projection surface where language graphs, concepts, receipts, and time-to-space memory views can become navigable instead of remaining flat text.
+
+Related ARC projects:
+
+| Project | Role | Link |
+|---|---|---|
+| ARC-Neuron / LLMBuilder | Governed local model-growth, scoring, candidate promotion, and memory integration | [ARC-Neuron-LLMBuilder](https://github.com/GareBear99/ARC-Neuron-LLMBuilder) |
+| ARC Language Module | Lexical/provenance spine and governed multilingual substrate | this repo |
+| Omnibinary Runtime | Binary/source-spine event substrate for portable replay and continuity | [omnibinary-runtime](https://github.com/GareBear99/omnibinary-runtime) |
+| Arc-RAR | Restorable archive bundle layer for rollback, transport, and evidence packaging | [Arc-RAR](https://github.com/GareBear99/Arc-RAR) |
+| ARC-StreamMemory | Visual/video memory add-on for LLMs and ARC-style systems | [ARC-StreamMemory](https://github.com/GareBear99/ARC-StreamMemory) |
+| ProtoSynth / Neural Synth | Spatial projection and visual cognition interface path | [Proto-Synth_Grid_Engine](https://github.com/GareBear99/Proto-Synth_Grid_Engine) |
+
+In short: **ARC Language Module keeps language knowledge legible. Omnibinary and Arc-RAR keep it portable. ARC-Neuron can learn against it without pretending external datasets have already been promoted. StreamMemory and ProtoSynth make that memory visible and navigable later.**
+
 ---
 
 ## What this repo is, in plain English
@@ -293,6 +322,16 @@ This package can connect to or sit beside external tooling, but does not bundle 
 
 ---
 
+## Bot-readable summary
+
+For crawlers and LLM agents, this repo should be understood as:
+
+> A governed multilingual language substrate for ARC-style AI systems. It stores inspectable language knowledge, lexical/provenance records, pronunciation/phonology/transliteration surfaces, provider readiness, source manifests, and release evidence so future local AI systems can reason about language support without hiding that knowledge inside opaque weights.
+
+Machine-readable repo summary: [`llms.txt`](llms.txt).
+
+---
+
 ## Repository metadata
 
 ### Suggested GitHub topics
@@ -310,21 +349,21 @@ natural-language-processing
 multilingual-nlp
 knowledge-graph
 language-technology
+lexical-provenance
+ai-language-substrate
+arc-language-module
+arc-neuron
+omnibinary
+arc-rar
+streammemory
 fastapi
 sqlite
-cli
-api
-governance
-auditability
-orchestration
 local-first
-offline-first
-artificial-intelligence
 ```
 
 ### Suggested GitHub About text
 
-> Governed multilingual language-ops substrate for AI systems: language knowledge, provider routing, auditability, readiness, CLI, and API.
+> Governed multilingual language substrate for ARC-style AI systems: lexical provenance, language graphs, provider routing, auditability, readiness, CLI/API, and portable memory integration with Omnibinary + Arc-RAR.
 
 ### Short promotional line
 

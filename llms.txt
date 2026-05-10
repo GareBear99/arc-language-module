@@ -1,0 +1,32 @@
+# ARC Language Module
+
+ARC Language Module is a governed multilingual language substrate for ARC-style AI systems. It stores inspectable language knowledge rather than hiding all lexical/provenance state inside model weights.
+
+Primary role:
+- language graph and registry
+- aliases, scripts, variants, lineage, pronunciation, phonology, transliteration
+- seeded phrase and concept knowledge
+- provider readiness and routing surfaces
+- source manifests, evidence, and release snapshots
+- CLI/API operation for local-first AI language infrastructure
+
+Current boundary:
+- production-track language infrastructure package
+- not a universal MT model
+- not a hidden external dataset dump
+- external corpora should enter through manifests, dry-runs, review, and evidence
+
+ARC ecosystem context:
+- ARC-Neuron / LLMBuilder: governed local model-growth and candidate promotion
+- ARC Language Module: lexical/provenance spine
+- Omnibinary Runtime: portable source-spine/event substrate
+- Arc-RAR: archive, replay, restore, rollback bundle layer
+- ARC-StreamMemory: visual/video memory add-on for LLMs and ARC-style systems
+- ProtoSynth / Neural Synth: spatial projection and visual cognition interface path
+
+Important links:
+- ARC-Neuron / LLMBuilder: https://github.com/GareBear99/ARC-Neuron-LLMBuilder
+- Omnibinary Runtime: https://github.com/GareBear99/omnibinary-runtime
+- Arc-RAR: https://github.com/GareBear99/Arc-RAR
+- ARC-StreamMemory: https://github.com/GareBear99/ARC-StreamMemory
+- ProtoSynth / Neural Synth: https://github.com/GareBear99/Proto-Synth_Grid_Engine
