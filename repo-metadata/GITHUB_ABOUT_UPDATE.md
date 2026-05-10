@@ -1,34 +1,27 @@
 # GitHub About update
 
-## Description
-
-Governed multilingual language substrate for ARC-style AI systems: lexical provenance, language graphs, provider routing, auditability, readiness, CLI/API, and portable memory integration with Omnibinary + Arc-RAR.
-
-## Website
-
-Use the GitHub Pages/site URL if enabled, otherwise leave blank.
-
-## Topics
+Suggested description:
 
 ```text
-multilingual
-translation
-language-detection
-transliteration
-pronunciation
+Governed multilingual backend for ARC-style AI systems: 35-language structured graph, lineage/script/phonology/provenance scaffolding, custom language intake, and LLM-ready language memory surfaces.
+```
+
+Suggested topics:
+
+```text
+language-module
+multilingual-ai
+language-graph
+linguistic-lineage
 phonology
-natural-language-processing
-multilingual-nlp
-knowledge-graph
-language-technology
-lexical-provenance
-ai-language-substrate
-arc-language-module
+transliteration
+ai-provenance
+local-first-ai
+offline-ai
+llm-tools
 arc-neuron
 omnibinary
 arc-rar
 streammemory
-fastapi
-sqlite
-local-first
+neural-synth
 ```

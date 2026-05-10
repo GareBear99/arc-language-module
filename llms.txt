@@ -1,32 +1,46 @@
 # ARC Language Module
 
-ARC Language Module is a governed multilingual language substrate for ARC-style AI systems. It stores inspectable language knowledge rather than hiding all lexical/provenance state inside model weights.
+ARC Language Module is a governed multilingual backend foundation for ARC-style systems and compatible LLM stacks. It is not a hidden dataset dump and it is not a universal translator by itself.
 
-Primary role:
-- language graph and registry
-- aliases, scripts, variants, lineage, pronunciation, phonology, transliteration
-- seeded phrase and concept knowledge
-- provider readiness and routing surfaces
-- source manifests, evidence, and release snapshots
-- CLI/API operation for local-first AI language infrastructure
+## Core role
 
-Current boundary:
-- production-track language infrastructure package
-- not a universal MT model
-- not a hidden external dataset dump
-- external corpora should enter through manifests, dry-runs, review, and evidence
+The module carries structured language knowledge: language IDs, aliases, scripts, family/branch lineage, variants, phonology profiles, pronunciation hints, transliteration hints, capability records, and governed custom language/custom lineage intake.
 
-ARC ecosystem context:
-- ARC-Neuron / LLMBuilder: governed local model-growth and candidate promotion
-- ARC Language Module: lexical/provenance spine
-- Omnibinary Runtime: portable source-spine/event substrate
-- Arc-RAR: archive, replay, restore, rollback bundle layer
-- ARC-StreamMemory: visual/video memory add-on for LLMs and ARC-style systems
-- ProtoSynth / Neural Synth: spatial projection and visual cognition interface path
+## Why it matters
 
-Important links:
+The module gives downstream models a structured language graph. That reduces pressure to memorize every language relationship as raw dataset rows because the system can reference lineage, script, phonology, transliteration, and variant structure.
+
+Formula summary:
+
+```text
+C_eff = W_model × G_language × E_verified
+```
+
+- W_model: actual model weights
+- G_language: ARC Language Module structured language graph
+- E_verified: verified examples, corrections, and future datasets
+
+## Current package truth
+
+- Seed graph: 35 languages
+- Pronunciation profiles: 35
+- Phonology profiles: 35
+- Transliteration profiles: 21
+- This does not mean native-level fluency across all languages.
+- It means the repo provides an auditable scaffold for language support, acquisition, routing, and future model alignment.
+
+## Related ARC ecosystem
+
 - ARC-Neuron / LLMBuilder: https://github.com/GareBear99/ARC-Neuron-LLMBuilder
 - Omnibinary Runtime: https://github.com/GareBear99/omnibinary-runtime
 - Arc-RAR: https://github.com/GareBear99/Arc-RAR
 - ARC-StreamMemory: https://github.com/GareBear99/ARC-StreamMemory
 - ProtoSynth / Neural Synth: https://github.com/GareBear99/Proto-Synth_Grid_Engine
+
+## Primary human docs
+
+- README.md
+- docs/LANGUAGE_GRAPH_AND_PARAMETER_EFFICIENCY.md
+- docs/ARCHITECTURE.md
+- docs/RUNTIME_ORCHESTRATION.md
+- docs/POLICY_AND_EVIDENCE.md
